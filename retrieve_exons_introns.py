@@ -42,7 +42,7 @@ def calc_total_len(locations, sequence):
 def extract_information(features, sequence):
     # Find the CDS feature
     cds_feature = find_cds_feature(features)
-    # Default variables if not CDS is available (tRNA)
+    # Default variables if no CDS is available (tRNA)
     amount_exons = 0
     amount_introns = 0
     length_exons = sequence.length()
@@ -60,8 +60,8 @@ def extract_information(features, sequence):
                               .calculate_inversed_locations(seq_length))
         amount_exons, length_exons = calc_total_len(cds_feature.location
                                                     .locations, sequence)
-        amount_introns, length_intros = calc_total_len(inversed_locations, 
-                                                       sequence)            
+        amount_introns, length_introns = calc_total_len(inversed_locations,
+                                                        sequence)
     else:
         amount_exons = 1
     # Create a dictionary
@@ -97,7 +97,7 @@ def main():
         for key in a:
             print("{}: {}".format(key, a[key]))
         print("======")
-	
+
 
 main()
 
