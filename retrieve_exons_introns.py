@@ -1,19 +1,28 @@
-from os import system, mkdir, listdir
+from os import system, mkdir
 from csv import reader
 from genbankparser.genbank_parser import GenbankParser
 from genbankparser.location_parser import JoinedLocation, ComplementLocation
+# Be python2 compatible
+try:
+    from urllib.request import urlopen
+except ImportError:
+    from urllib import urlopen
 
 
 def download_nucleotide_genbank_files():
-	genecode_accession_dict = {}
-	mkdir("nucleotide_genbank_files")
-	with open('outputs/genecodes', 'r') as csvfile:
-		for row in reader(csvfile, delimiter=' '):
-			system("wget -qO nucleotide_genbank_files/{}.gb \"https://eutils."
-				   "ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nucleotide&"
-				   "id={}&rettype=gb\"".format(row[0], row[1]))
-			genecode_accession_dict[row[0]] = row[1]
-	return genecode_accession_dict
+    genecode_accession_dict = {}
+    mkdir("nucleotide_genbank_files")
+    with open('outputs/genecodes', 'r') as csvfile:
+        for row in reader(csvfile, delimiter=' '):
+            request = urlopen('https://eutils.ncbi.nlm.nih.gov/entrez/eutils/'
+                              'efetch.fcgi?db=nucleotide&id={}&rettype=gb'
+                              .format(row[1]))
+            filename = 'nucleotide_genbank_files/{}.gb'.format(row[0])
+            with open(filename, 'w') as file:
+                file.write(request.read().decode())
+            request.close()
+            genecode_accession_dict[row[0]] = row[1]
+    return genecode_accession_dict
 
 
 def find_cds_feature(features):
@@ -60,8 +69,8 @@ def extract_information(features, sequence):
                 introns=amount_introns, introns_length=length_introns)
     
 
-def gene_information_generator(accesion_genecode_map):
-    for accession in accesion_genecode_map:
+def gene_information_generator(accession_genecode_map):
+    for accession in accession_genecode_map:
         with GenbankParser("nucleotide_genbank_files/{}.gb"
                            .format(accession)) as parser:
             # We are not interested in the metadata, so don't parse it
@@ -72,7 +81,7 @@ def gene_information_generator(accesion_genecode_map):
             information = extract_information(features, sequence)
             information['sequence'] = sequence.sequence
             information['accession'] = accession
-            #information['genecode'] = accession_genecode_map[accession]
+            information['genecode'] = accession_genecode_map[accession]
             yield information
 
 
