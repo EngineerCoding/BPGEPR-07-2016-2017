@@ -1,6 +1,6 @@
 import urllib
 from re import split
-        
+import json
         
 def reaction_number(rn_geneid_list):
     """
@@ -15,6 +15,7 @@ def reaction_number(rn_geneid_list):
     for x in range(len(rn_geneid_list)):
         rn_htmlfile = urllib.urlopen("http://www.genome.jp/dbget-bin/get_linkdb?-t+reaction+asn:" + str(rn_geneid_list[x]))
         rn_htmltext = rn_htmlfile.read().decode()
+        rn_htmlfile.close()
         rn_list_reactions = search_reactionnr(rn_htmltext)
         for i in range(len(rn_list_reactions)):
             rn_dict_reactions.update({rn_geneid_list[x]: rn_list_reactions})
@@ -76,17 +77,21 @@ def main():
     gene_code_rcodes = reaction_number(m_geneid_list)
     gene_code_reaction = {}
     for genecode in gene_code_rcodes:
-        gene_code_reaction[genecode] = {}
+        gene_code_reaction[genecode] = []
         for rcode in gene_code_rcodes[genecode]:
             kegg_api = urllib.urlopen("http://rest.kegg.jp/get/reaction:{}"
                                       .format(rcode))
             contents = kegg_api.read().decode().split('\n')
-            gene_code_reaction[genecode]['reaction'] = get_line(contents, 
-                                                                'DEFINITION')
+            kegg_api.close()
+            reaction = get_line(contents, 'DEFINITION')
             ec = split('\s+', get_line(contents, 'ENZYME'))
-            gene_code_reaction[genecode]['ec'] = ec
-    print(gene_code_reaction)
+            gene_code_reaction[genecode].append(dict(reaction=reaction, ec=ec,
+                                                     id=rcode))
+    print(json.dumps(gene_code_reaction, sort_keys=True,
+                     indent=4, separators=(',', ': ')))
 
 
 main()
+
+
 
