@@ -2,7 +2,8 @@ try:
     import urllib.request as urllib
 except ImportError:
     import urllib
-from re import split
+from re import split, search
+import json
 
 
 def get_line(lines, starting):
@@ -42,15 +43,16 @@ def get_asn_for_gene(protein_code):
     return split('\s+', line)[0]
 
 
-def get_pathways(asncode):
+def get_pathways_pfams(asncode):
     """ Retrieves all the asn codes for the pathway which the gene asn code
-    contains.
+    contains. At the same time, it will retrieve the pfam families of this
+    gene.
 
     Parameters:
         asncode - string. This is the asn code which is retrieved by the
         get_asn_for_gene function.
     Returns:
-        A list of pathway asn codes.
+        A list of pathway asn codes, and a list of pfam families.
     """
     # Do the API call
     connection = urllib.urlopen('http://rest.kegg.jp/get/' + asncode)
@@ -61,9 +63,17 @@ def get_pathways(asncode):
     while pathway_line.startswith('asn'):
         pathways.append(split('\s+', pathway_line)[0])
         pathway_line = connection.readline().decode().strip()
+    # Retrieve the pfam families if available
+    pfams = []
+    pfam_string = get_line(connection, 'MOTIF')
+    if pfam_string:
+        # Check if the line starts with Pfam, otherwise these are not Pfam
+        # families
+        if pfam_string.startswith('Pfam:'):
+            pfams = split('\s+', pfam_string[5:].lstrip())
     # Close the connection
     connection.close()
-    return pathways
+    return pathways, pfams
 
 
 def get_authors_list(connection):
@@ -117,15 +127,46 @@ def get_data_from_pathway(asn_pathway_code):
     return collected_data
 
 
+def get_data_from_pfam(pfam):
+    """ Retrieves the average domain length, identity percentage and average
+    coverage of the domain from the PFAM api.
+
+    Parameters:
+        pfam - string.
+    Returns:
+        A dictionary with the following keys:
+            - av_length (average domain length)
+            - percentage_identity
+            - av_coverage (average coverage)
+    """
+    # Read the xml
+    connection = urllib.urlopen('http://pfam.xfam.org/family/{}?output=xml'
+                                .format(pfam))
+    xml = connection.read().decode()
+    connection.close()
+    # Get the data
+    pfam_data = {}
+    matching_pattern = '<{0}>([-+]?\d*\.\d+|\d+)</{0}>'
+    for tag in ['av_length', 'percentage_identity', 'av_coverage']:
+        pfam_data[tag] = search(matching_pattern.format(tag), xml).group(1)
+    return pfam_data
+
+
 def main():
     eiwit_codes = ['102381974', '102383435']
     for protein_code in eiwit_codes:
         asn_code = get_asn_for_gene(protein_code)
-        pathways = get_pathways(asn_code)
+        pathways, pfams = get_pathways_pfams(asn_code)
+        # Handle pathway data
         pathway_data = {}
         for pathway in pathways:
             pathway_data[pathway] = get_data_from_pathway(pathway)
+        # Handle Pfam data
+        pfam_data = {}
+        for pfam in pfams:
+            pfam_data[pfam] = get_data_from_pfam(pfam)
         print(json.dumps(pathway_data, sort_keys=True, indent=4))
+        print(json.dumps(pfam_data, sort_keys=True, indent=4))
 
 
 main()
