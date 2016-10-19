@@ -149,6 +149,10 @@ def get_data_from_pfam(pfam):
     matching_pattern = '<{0}>([-+]?\d*\.\d+|\d+)</{0}>'
     for tag in ['av_length', 'percentage_identity', 'av_coverage']:
         pfam_data[tag] = search(matching_pattern.format(tag), xml).group(1)
+        if '.' in pfam_data[tag]:
+            pfam_data[tag] = float(pfam_data[tag])
+        else:
+            pfam_data[tag] = int(pfam_data[tag])
     return pfam_data
 
 
