@@ -33,7 +33,7 @@ BEGIN {
 }
 END {
 	geneList = substr(geneList, 2, length(geneList) - 1);
-	system("wget -qO- \"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=protein&id=" geneList "&rettype=fasta\" | egrep ^\\> | cut -c5- | sed \"s/|ref|/ /g\" | tr -d \"|\" > output")
+	system("wget -qO- \"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=protein&id=" geneList "&rettype=fasta&showgi=1\" | egrep ^\\> | cut -c5- | sed \"s/|ref|/ /g\" | tr -d \"|\" > output")
 	while ((getline line < "output") > 0) {
 		spaceIndex = index(line, " ");		
 		geneId = substr(line, 1, spaceIndex - 1);
@@ -55,7 +55,7 @@ mkdir protein_genbank_files
 for accession in $(awk '{print $1}' outputs/genecodes)
 do
 	# Download the genbank file for proteins
-	wget -qO "protein_genbank_files/$accession.gb" "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=protein&id=$accession&rettype=gb"
+	wget -qO "protein_genbank_files/$accession.gb" "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=protein&id=$accession&rettype=gb&showgi=1"
 	# Parse the name of the product
 	product=$(cat "protein_genbank_files/$accession.gb" | grep -Pzo "(?s)product=\".*?\"" | tr -d '[\n"]' | tr -s ' ' | cut -c9-)
 	# Parse the GI code (protein code)
