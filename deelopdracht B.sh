@@ -7,7 +7,7 @@ cd outputs
 # Assignment 3 of B
 
 # Retrieve the genome transcript in FASTA format of Alligator Sinensis
-wget "ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCF_000455745.1_ASM45574v1/GCF_000455745.1_ASM45574v1_rna.fna.gz" -O alligator_sinensis_cds.fa.gz
+wget -q "ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCF_000455745.1_ASM45574v1/GCF_000455745.1_ASM45574v1_rna.fna.gz" -O alligator_sinensis_cds.fa.gz
 gunzip alligator_sinensis_cds.fa.gz
 # Create the database and BLAST our sequences against it
 formatdb -i alligator_sinensis_cds.fa -pF

@@ -2,6 +2,8 @@
 import psycopg2
 from os import system, mkdir
 from csv import reader
+
+from location_parser import parse_location, ComplementLocation, JoinedLocation
 from utils import get_line
 
 try:
@@ -102,8 +104,23 @@ def read_sequence(file):
     return sequence
 
 
-def insert_exon(location, genecode):
-    pass
+def insert_exon(cursor, location, genecode):
+    location = parse_location(location)
+    is_complement_location = isinstance(location, ComplementLocation)
+    table_data = []
+    base_dict = dict(gene_id=genecode, complement=is_complement_location)
+    if isinstance(location, JoinedLocation):
+        for begin, end in location.get_ranges():
+            base_dict['start_positie'] = begin
+            base_dict['eind_positie'] = end
+            # Only append new instances of a dictionary
+            table_data.append(dict(base_dict))
+    else:
+        start, end = location.get_range()
+        base_dict['start_positie'] = start
+        base_dict['eind_positie'] = end
+        table_data.append(base_dict)
+    insert_data(cursor, 'Exon_07', table_data)
 
 
 def insert_gene_exon(cursor, accesion_genecode):
@@ -121,7 +138,7 @@ def insert_gene_exon(cursor, accesion_genecode):
             while not line.startswith('ACCESSION'):
                 definition_line += ' ' + line.strip()
             row['gen_naam'] = definition_line
-            insert_exon(get_line(genbank, 'CDS'), row['gen_id'])
+            insert_exon(cursor, get_line(genbank, 'CDS'), row['gen_id'])
             # Read until ORIGIN
             row['gen_sequentie'] = read_sequence(genbank)
         table_data.append(row)
