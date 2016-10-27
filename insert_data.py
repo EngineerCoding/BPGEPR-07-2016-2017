@@ -53,9 +53,8 @@ def insert_pathway_domains(cursor):
 
 def main():
     prep_inserting()
-    connection = pscyopg2.connect(host="localhost", dbname="dbname", user="postgres", password="BiOLAbnogwat")
+    connection = pscyopg2.connect(host="localhost", dbname="dbname", user="postgres", password="BiOLaB15")
     cursor = connection.cursor()
     insert_gene_exon(cursor)
     insert_protein_reactions(cursor)
     insert_pathway_domains(cursor)
-    
