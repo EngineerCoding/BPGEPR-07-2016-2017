@@ -11,8 +11,10 @@ def get_line(lines, starting):
         The line which starts with the line. If not available it will return
         an empty string.
     """
-    for line in lines:
+    line = lines.readline()
+    while line:
         line = line.strip()
         if line.startswith(starting):
             return line[len(starting):].lstrip()
+        line = lines.readline()
     return ""

@@ -12,36 +12,8 @@ except ImportError:
     from urllib import urlopen
 
 
-def download_nucleotide_genbank_files():
-    """ Downloads all the required Genbank Files to get and saves those files
-     by their accession numbers in the folder nucleotide_genbank_files. For
-     this the genecodes must be known, and is being read from the
-     outputs/genecodes file.
-     At the same time a dictionary is created with accession string as keys
-     and the associated genecode as value.
-    """
-    mkdir("nucleotide_genbank_files")
-    # Open the genecodes file for use as csv
-    with open('outputs/genecodes', 'r') as csvfile:
-        # Genecodes file looks like:
-        # <accession> <genecode> <etc.>
-        # So it is a CSV file except that the delimiter is not a comma but a
-        # space. Why reinvent the wheel while there is already a solution?
-        for row in reader(csvfile, delimiter=' '):
-            # Download the file
-            request = urlopen('https://eutils.ncbi.nlm.nih.gov/entrez/eutils/'
-                              'efetch.fcgi?db=nucleotide&id={}&rettype=gb'
-                              .format(row[1]))
-            filename = 'nucleotide_genbank_files/{}.gb'.format(row[0])
-            # Write to the file as we read
-            with open(filename, 'w') as file:
-                file.write(request.read().decode())
-            request.close()
-
-
 def prep_inserting():
-    system('bash deelopdracht\\ B')
-    download_nucleotide_genbank_files()
+    system('bash deelopdracht\\ B.sh')
     # Execute CREATE statements
 
 
@@ -49,12 +21,12 @@ def get_accession_dictionaries():
     # Generate an accession - genecode dict
     acc_genecode = {}
     with open('outputs/genecodes', 'r') as file:
-        for row in reader(file, dialect=' '):
+        for row in reader(file, delimiter=' '):
             acc_genecode[row[0]] = row[1]
     # Generate an accession - protein dict
     acc_proteincode = {}
     with open('outputs/proteincodes', 'r') as file:
-        for row in reader(file, dialect=' '):
+        for row in reader(file, delimiter=' '):
             acc_proteincode[row[0]] = row[1]
     # Merge the dictionaries so a dictionary genecode - proteincodes gets
     # created
@@ -89,26 +61,25 @@ def insert_data(cursor, table, lst_data):
         # Generate the columns string for the query
         columns = ", ".join(columns)
         # Generate the values string for the query
-        values = '\'{}\''.format('\', \''.join(values))
-        cursor.execute(query.format(table, columns, values))
-    # Commit the insertions in one batch
-    cursor.commit()
+        holders = ', '.join(['%s' for a in range(len(values))])
+        cursor.execute(query.format(table, columns, holders), values)
 
 
 def read_sequence(file):
     get_line(file, 'ORIGIN')
     sequence = ''
-    line = file.readline().strip()
-    while line and line.startswith('//'):
+    line = file.readline()
+    while line and not line.startswith('//'):
         sequence += ''.join(line.strip().split()[1:])
+        line = file.readline()
     return sequence
 
 
-def insert_exon(cursor, location, genecode):
+def get_exon_rows(cursor, location, genecode):
     location = parse_location(location)
     is_complement_location = isinstance(location, ComplementLocation)
     table_data = []
-    base_dict = dict(gene_id=genecode, complement=is_complement_location)
+    base_dict = dict(gen_id=genecode, complement=is_complement_location)
     if isinstance(location, JoinedLocation):
         for begin, end in location.get_ranges():
             base_dict['start_positie'] = begin
@@ -120,50 +91,61 @@ def insert_exon(cursor, location, genecode):
         base_dict['start_positie'] = start
         base_dict['eind_positie'] = end
         table_data.append(base_dict)
-    insert_data(cursor, 'Exon_07', table_data)
+    return table_data
 
 
 def insert_gene_exon(cursor, accesion_genecode):
     # First insert the literal gene information
-    table_data = []
+    gene_data = []
+    exon_data = []
     for accession in accesion_genecode:
         row = dict(accession_code=accession,
                    gen_id=accesion_genecode[accession])
         # Read data from the nucleotide genbank file such as, name,
         # exon location and sequence.
-        path = 'nucleotide_genbank_files/{}.gb'.format(accession)
+        path = 'protein_genbank_files/{}.gb'.format(accession)
         with open(path, 'r') as genbank:
+            # Get the gene name
             definition_line = get_line(genbank, 'DEFINITION')
             line = genbank.readline()
             while not line.startswith('ACCESSION'):
                 definition_line += ' ' + line.strip()
+                line = genbank.readline()
+            # Strip off the first part
+
             row['gen_naam'] = definition_line
-            insert_exon(cursor, get_line(genbank, 'CDS'), row['gen_id'])
+            exon_line = get_line(genbank, 'CDS')
+            if exon_line:
+                exon_data.extend(get_exon_rows(cursor, exon_line,
+                                               row['gen_id']))
             # Read until ORIGIN
             row['gen_sequentie'] = read_sequence(genbank)
-        table_data.append(row)
-    insert_data(cursor, 'Gen_07', table_data)
+        gene_data.append(row)
+    insert_data(cursor, 'Gen_07', gene_data)
+    insert_data(cursor, 'Exon_07', exon_data)
 
 
 def insert_protein(cursor, accession_genecode, genecode_proteincode):
     # First map proteincode to its name
     protein_names = {}
-    for accession in accession_genecode:
-        path = 'protein_genbank_files/{}.gb'.format(accession)
-        with open(path, 'r') as file:
-            for row in reader(file, delimiter=' '):
-                proteincode = row[1]
-                del proteincode[1], proteincode[0]
-                protein_names[proteincode] = dict(name=' '.join(row),
-                                                  path=path)
+    with open('outputs/proteincodes', 'r') as file:
+        for row in reader(file, delimiter=' '):
+            proteincode = row[1]
+            del row[1], row[0]
+            protein_names[proteincode] = ' '.join(row)
+    # Reverse genecode_accession
+    gene_accession = {accession_genecode[k]: k for k in accession_genecode}
     # Generate the table data
     table_data = []
     for genecode in genecode_proteincode:
         proteincode = genecode_proteincode[genecode]
+        if proteincode == '-':
+            continue
         row = dict(eiwit_id=proteincode, gen_id=genecode,
-                   eiwit_naam=protein_names[proteincode]['name'])
+                   eiwit_naam=protein_names[proteincode])
         # Retrieve the sequence
-        with open(protein_names[proteincode]['path'], 'r') as genbank:
+        path = 'protein_genbank_files/{}.gb'.format(gene_accession[genecode])
+        with open(path, 'r') as genbank:
             row['eiwit_sequentie'] = read_sequence(genbank)
         table_data.append(row)
     insert_data(cursor, 'Eiwit_07', table_data)
@@ -187,3 +169,5 @@ def main():
     insert_protein(cursor, genecode, genecode2proteincode)
     insert_protein_reactions(cursor)
     insert_pathway_domains(cursor)
+    connection.commit()
+    connection.close()

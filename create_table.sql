@@ -8,10 +8,11 @@ CREATE TABLE Gen_07 (
 
 DROP TABLE IF EXISTS Exon_07 CASCADE;
 CREATE TABLE Exon_07 (
-  exon_id NUMERIC(9, 0) PRIMARY KEY,
+  exon_id SERIAL PRIMARY KEY,
   gen_id NUMERIC(9, 0),
   start_positie INTEGER,
   eind_positie INTEGER,
+  complement BOOLEAN,
 
   FOREIGN KEY (gen_id) REFERENCES Gen_07(gen_id)
 );
