@@ -3,6 +3,7 @@ try:
 except ImportError:
     import urllib
 from re import split
+from utils import get_line
 
 
 def reaction_number(geneid_list):
@@ -69,26 +70,6 @@ def tag_reactionnr(char, tag, all_reactions, reaction_nr):
             reaction_nr = ""
             tag = 0
     return tag, reaction_nr, all_reactions
-
-
-def get_line(lines, starting):
-    """ Reads lines until it hits the starting string. Note that the read
-    line is being stripped, meaning that putting whitespace in the starting
-    string would be redundant.
-
-    Arguments:
-        lines - File like object. A file like (or url) object which can be iterated through
-        for lines.
-        starting - string. The string which the line should start with.
-    Returns:
-        The line which starts with the line. If not available it will return
-        an empty string.
-    """
-    for line in lines:
-        line = line.strip()
-        if line.startswith(starting):
-            return line[len(starting):].lstrip()
-    return ""
 
 
 def get_reaction_data(gene_codes):
