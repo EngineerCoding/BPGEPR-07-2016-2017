@@ -3,7 +3,6 @@ try:
 except ImportError:
     import urllib
 from re import split, search
-import json
 
 
 def get_line(lines, starting):
@@ -26,7 +25,7 @@ def get_line(lines, starting):
     return ""
 
 
-def get_asn_for_gene(protein_code):
+def get_asn(protein_code):
     """ Does the API call to retrieve the ASN code for the protein code.
 
     Arguments:
@@ -95,7 +94,7 @@ def get_authors_list(connection):
     return authors_list
 
 
-def get_data_from_pathway(asn_pathway_code):
+def get_pathway_data(asn_pathway_code):
     """ Retrieves all the data of the pathway such as name, class and all the
      publications that are available on this pathway. This includes the
      publication information such as title, journal, reference and authors.
@@ -127,7 +126,7 @@ def get_data_from_pathway(asn_pathway_code):
     return collected_data
 
 
-def get_data_from_pfam(pfam):
+def get_pfam_data(pfam):
     """ Retrieves the average domain length, identity percentage and average
     coverage of the domain from the PFAM api.
 
@@ -156,21 +155,17 @@ def get_data_from_pfam(pfam):
     return pfam_data
 
 
-def main():
-    eiwit_codes = ['102381974', '102383435']
-    for protein_code in eiwit_codes:
-        asn_code = get_asn_for_gene(protein_code)
+def get_pathway_pfam_data(gene_codes):
+    pathways, pfams = {}, {}
+    for gene_code in gene_codes:
+        asn_code = get_asn(gene_code)
         pathways, pfams = get_pathways_pfams(asn_code)
         # Handle pathway data
-        pathway_data = {}
+        pathways[gene_code] = {}
         for pathway in pathways:
-            pathway_data[pathway] = get_data_from_pathway(pathway)
+            pathways[gene_code][pathway] = get_pathway_data(pathway)
         # Handle Pfam data
-        pfam_data = {}
+        pfams[gene_code] = {}
         for pfam in pfams:
-            pfam_data[pfam] = get_data_from_pfam(pfam)
-        print(json.dumps(pathway_data, sort_keys=True, indent=4))
-        print(json.dumps(pfam_data, sort_keys=True, indent=4))
-
-
-main()
+            pfams[gene_code][pfam] = get_pfam_data(pfam)
+    return pathways, pfams

@@ -3,7 +3,6 @@ try:
 except ImportError:
     import urllib
 from re import split
-import json
 
 
 def reaction_number(geneid_list):
@@ -92,10 +91,9 @@ def get_line(lines, starting):
     return ""
 
 
-def main():
-    geneid_list = ['102381974', '102383435']
+def get_reaction_data(gene_codes):
     # Get reaction R codes
-    gene_code_rcodes = reaction_number(geneid_list)
+    gene_code_rcodes = reaction_number(gene_codes)
     gene_code_reaction = {}
     for genecode in gene_code_rcodes:
         gene_code_reaction[genecode] = []
@@ -109,8 +107,4 @@ def main():
             ec = split('\s+', get_line(contents, 'ENZYME'))
             gene_code_reaction[genecode].append(dict(reaction=reaction, ec=ec,
                                                      id=rcode))
-    print(json.dumps(gene_code_reaction, sort_keys=True,
-                     indent=4, separators=(',', ': ')))
-
-
-main()
+    return gene_code_reaction
