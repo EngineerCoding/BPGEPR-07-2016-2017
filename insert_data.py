@@ -102,18 +102,20 @@ def read_sequence(file):
     return sequence
 
 
-def insert_exon(location, genecode, genecode_proteincode):
+def insert_exon(location, genecode):
     pass
 
 
-def insert_gene_exon(cursor, accesion_genecode, genecode_proteincode):
+def insert_gene_exon(cursor, accesion_genecode):
+    # First insert the literal gene information
     table_data = []
     for accession in accesion_genecode:
         row = dict(accession_code=accession,
                    gen_id=accesion_genecode[accession])
         # Read data from the nucleotide genbank file such as, name,
         # exon location and sequence.
-        with open('nucleotide_genbank_files', 'r') as genbank:
+        path = 'nucleotide_genbank_files/{}.gb'.format(accession)
+        with open(path, 'r') as genbank:
             definition_line = get_line(genbank, 'DEFINITION')
             line = genbank.readline()
             while not line.startswith('ACCESSION'):
@@ -124,6 +126,30 @@ def insert_gene_exon(cursor, accesion_genecode, genecode_proteincode):
             row['gen_sequentie'] = read_sequence(genbank)
         table_data.append(row)
     insert_data(cursor, 'Gen_07', table_data)
+
+
+def insert_protein(cursor, accession_genecode, genecode_proteincode):
+    # First map proteincode to its name
+    protein_names = {}
+    for accession in accession_genecode:
+        path = 'protein_genbank_files/{}.gb'.format(accession)
+        with open(path, 'r') as file:
+            for row in reader(file, delimiter=' '):
+                proteincode = row[1]
+                del proteincode[1], proteincode[0]
+                protein_names[proteincode] = dict(name=' '.join(row),
+                                                  path=path)
+    # Generate the table data
+    table_data = []
+    for genecode in genecode_proteincode:
+        proteincode = genecode_proteincode[genecode]
+        row = dict(eiwit_id=proteincode, gen_id=genecode,
+                   eiwit_naam=protein_names[proteincode]['name'])
+        # Retrieve the sequence
+        with open(protein_names[proteincode]['path'], 'r') as genbank:
+            row['eiwit_sequentie'] = read_sequence(genbank)
+        table_data.append(row)
+    insert_data(cursor, 'Eiwit_07', table_data)
 
 
 def insert_protein_reactions(cursor):
@@ -140,6 +166,7 @@ def main():
     connection = psycopg2.connect(host="localhost", dbname="dbname",
                                   user="postgres", password="BiOLaB15")
     cursor = connection.cursor()
-    insert_gene_exon(cursor, genecode, genecode2proteincode)
+    insert_gene_exon(cursor, genecode)
+    insert_protein(cursor, genecode, genecode2proteincode)
     insert_protein_reactions(cursor)
     insert_pathway_domains(cursor)
