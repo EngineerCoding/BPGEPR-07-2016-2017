@@ -1,9 +1,10 @@
 #!/usr/python
 import psycopg2
-from os import execute
+from os import system
+
 
 def prep_inserting():
-    execute('bash deelopdracht\\ B')
+    system('bash deelopdracht\\ B')
     # Execute CREATE statements
 
 
@@ -28,7 +29,7 @@ def insert_data(cursor, table, lst_data):
         values = []
         for column in query_data:
             columns.append(column)
-            values.append(query_data)
+            values.append(query_data[column])
         # Generate the columns string for the query
         columns = ", ".join(columns)
         # Generate the values string for the query
