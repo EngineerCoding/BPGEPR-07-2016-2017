@@ -4,6 +4,7 @@ except ImportError:
     import urllib
 from re import split, search
 from utils import get_line
+from json import loads
 
 
 def get_asn(protein_code):
@@ -16,11 +17,13 @@ def get_asn(protein_code):
         When available, the asn code.
     """
     connection = urllib.urlopen(
-        'http://rest.kegg.jp/find/genes/' + str(protein_code))
+        'https://biodbnet-abcc.ncifcrf.gov/webServices/rest.php/biodbnetRestAp'
+        'i.json?method=db2db&input=ginumber&inputValues={}&outputs=kegggeneid&'
+        'format=row'.format(str(protein_code)))
     # Only read the first line
-    line = connection.readline().decode()
+    json = loads(connection.read().decode())
     connection.close()
-    return split('\s+', line)[0]
+    return json[0]['KEGG Gene ID']
 
 
 def get_pathways_pfams(asncode):

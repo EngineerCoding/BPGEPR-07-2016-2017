@@ -16,7 +16,7 @@ except ImportError:
 
 
 def prep_inserting():
-    #system('bash deelopdracht\\ B.sh')
+    system('bash deelopdracht\\ B.sh')
     # Execute CREATE statements
     pass
 
@@ -216,31 +216,111 @@ def insert_protein_reactions(cursor):
     pass
 
 
-def create_formatted_pathway_data(pathway, id):
-    pathway_row = {'class': pathway['class'], 'pathway_naam': pathway['name'],
-                   'pathway_id': id}
-    reference_rows = []
+def create_formatted_pathway_data(pathway, id, path_data, stored_authors,
+                                  author_data, ref_author_links,
+                                  ref_data):
+    """ Creates a row for the pathway, reference and author. This function
+    should only be called when a new pathway is encountered, since this
+    function does not check for duplicate pathways. All formatted data is
+    appended to lists or dictionaries passed to this function.
+
+    Parameters:
+        pathway - dictionary. The pathway dictionary which contains the
+        information about this pathway.
+        id - string. The pathway id.
+        path_data - list. This list is the actual data of the pathway which
+        is eventually used with insert_data and thus contains rows.
+        stored_authors - list. A list of authors which already are in a row.
+        author_data - list. This list is the actual data of the authors which
+        is eventually used with insert_data and thus contains rows.
+        ref_author_links - dictionary. The dictionary which contains the
+        information which reference links to which author.
+        ref_data - list. This list is the actual data of the references which
+        is eventually used with insert_data and thus contains rows.
+    Returns:
+        nothing
+    """
+    path_data.append({'class': pathway['class'],
+                      'pathway_naam': pathway['name'], 'pathway_id': id})
     for pub in pathway['publications']:
-        reference_rows.append({'referentie_id': pub['id'], 'pathway_id': id,
-                               'titel': pub['title'],
-                               'journal': pub['journal']})
+        ref_data.append({'referentie_id': pub['id'], 'pathway_id': id,
+                         'titel': pub['title'], 'journal': pub['journal']})
+        ref_author_links[pub['id']] = []
+        for author in pub['authors']:
+            if author not in stored_authors:
+                stored_authors.append(author)
+                author_data.append({'auteur_naam': author})
+            ref_author_links[pub['id']].append(stored_authors.index(author))
+
+
+def insert_reference_author_junction(cursor, ref_author_links):
+    """ This function inserts the data of the junction table
+    'ReferentieAuteur_07'. The SERIAL primary key is starting from 1 and thus
+    reliable to make a connection from.
+
+    Parameters:
+        cursor - Cursor object. The cursor to execute queries from.
+        ref_author_links - dictionary. The dictionary which contains the
+        information which reference links to which author.
+    """
+    reference_author_data = []
+    for ref in ref_author_links:
+        for author_id in ref_author_links[ref]:
+            # Create a row for the junction table
+            reference_author_data.append({'auteur_id': author_id + 1,
+                                          'referentie_id': ref})
+    insert_data(cursor, 'ReferentieAuteur_07', reference_author_data)
+
+
+def insert_domain(cursor, genecode_protein, pfam):
+    pass
 
 
 def insert_pathway_domains(cursor, genecode_protein):
+    """ This is the main function of retrieving data for the pathway branch
+    of the database and insert it into this database. The script pathway_pfam
+    is responsible for retrieving all raw data for the pathway and pfam
+    (domains).
+
+    Parameters:
+        cursor - Cursor object. The Cursor object to execute queries on.
+        genecode_protein - dictionary. This is the dictionary which has
+        genecodes as keys and proteincodes as values.
+    Returns:
+        Nothing
+    """
+    # Retrieve the actual data
     pathway, pfam = get_pathway_pfam_data([genecode_protein[k] for k in
                                            genecode_protein])
-    # Insert the pathways
-    stored_pathways = []
-    pathway_data = []
-    protein_links = {}
+    # Insert domain info
+    insert_domain(cursor, genecode_protein, pfam)
+    # Insert the pathways, reference and the authors
+    stored_pathways, stored_authors, pathway_data = [], [], []
+    author_data, reference_data = [], []
+    reference_author_links, protein_links = {}, {}
     for protein_code in pathway:
-        if len(pathway) == 0:
+        # If no pathways are available, the algorithm will not work
+        if len(pathway[protein_code]) == 0:
             continue
+        # Make a link with the protein code to the pathway id
         for pathwaycode in pathway[protein_code]:
             protein_links[protein_code] = pathwaycode
+            # If not stored yet, create an entry
             if pathwaycode not in stored_pathways:
                 create_formatted_pathway_data(
-                    pathway[protein_code][pathwaycode], pathwaycode)
+                    pathway[protein_code][pathwaycode], pathwaycode,
+                    pathway_data, stored_authors, author_data,
+                    reference_author_links, reference_data)
+                stored_pathways.append(pathwaycode)
+    # Insert all the data
+    insert_data(cursor, 'Pathway_07', pathway_data)
+    # Use correct format for the protein - pathway junction table
+    insert_data(cursor, 'EiwitPathway_07',
+                [{'eiwit_id': k, 'pathway_id': protein_links[k]} for k in
+                 protein_links])
+    insert_data(cursor, 'Referentie_07', reference_data)
+    insert_data(cursor, 'Auteur_07', author_data)
+    insert_reference_author_junction(cursor, reference_author_links)
 
 
 def main():
