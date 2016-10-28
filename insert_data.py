@@ -216,20 +216,44 @@ def insert_protein_reactions(cursor):
     pass
 
 
-def insert_pathway_domains(cursor):
-    pass
+def create_formatted_pathway_data(pathway, id):
+    pathway_row = {'class': pathway['class'], 'pathway_naam': pathway['name'],
+                   'pathway_id': id}
+    reference_rows = []
+    for pub in pathway['publications']:
+        reference_rows.append({'referentie_id': pub['id'], 'pathway_id': id,
+                               'titel': pub['title'],
+                               'journal': pub['journal']})
+
+
+def insert_pathway_domains(cursor, genecode_protein):
+    pathway, pfam = get_pathway_pfam_data([genecode_protein[k] for k in
+                                           genecode_protein])
+    # Insert the pathways
+    stored_pathways = []
+    pathway_data = []
+    protein_links = {}
+    for protein_code in pathway:
+        if len(pathway) == 0:
+            continue
+        for pathwaycode in pathway[protein_code]:
+            protein_links[protein_code] = pathwaycode
+            if pathwaycode not in stored_pathways:
+                create_formatted_pathway_data(
+                    pathway[protein_code][pathwaycode], pathwaycode)
 
 
 def main():
     prep_inserting()
     genecode, proteincode, genecode2proteincode = get_accession_dictionaries()
-    connection = psycopg2.connect(host="localhost", dbname="dbname",
-                                  user="postgres", password="BiOLaB15")
+    connection = psycopg2.connect(host="localhost", dbname="postgres",
+                                  user="postgres", password="MyPassword")
     cursor = connection.cursor()
     insert_gene_exon(cursor, genecode)
     insert_protein(cursor, genecode, genecode2proteincode)
+    connection.commit()
     insert_protein_reactions(cursor)
-    insert_pathway_domains(cursor)
+    insert_pathway_domains(cursor, genecode2proteincode)
     connection.commit()
     connection.close()
 
