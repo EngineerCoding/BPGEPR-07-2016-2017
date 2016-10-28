@@ -38,8 +38,7 @@ DROP TABLE IF EXISTS Pathway_07 CASCADE;
 CREATE TABLE Pathway_07 (
   pathway_id CHAR(8) PRIMARY KEY,
   pathway_naam TEXT,
-  class TEXT,
-  referentie_id INTEGER
+  class TEXT
 );
 
 DROP TABLE IF EXISTS EiwitPathway_07 CASCADE;
@@ -74,7 +73,6 @@ DROP TABLE IF EXISTS ReferentieAuteur_07 CASCADE;
 CREATE TABLE ReferentieAuteur_07 (
   auteur_id SERIAL,
   referentie_id INTEGER,
-
 
   FOREIGN KEY (auteur_id) REFERENCES Auteur_07(auteur_id),
   FOREIGN KEY (referentie_id) REFERENCES Referentie_07(referentie_id)

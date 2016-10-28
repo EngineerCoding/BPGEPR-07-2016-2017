@@ -1,9 +1,12 @@
 #!/usr/python
+import json
+
 import psycopg2
 from os import system
 from csv import reader
 
 from location_parser import parse_location, ComplementLocation, JoinedLocation
+from pathway_pfam import get_pathway_pfam_data
 from utils import get_line
 
 try:

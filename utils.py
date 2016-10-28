@@ -13,6 +13,8 @@ def get_line(lines, starting):
     """
     line = lines.readline()
     while line:
+        if isinstance(line, bytes):
+            line = line.decode()
         line = line.strip()
         if line.startswith(starting):
             return line[len(starting):].lstrip()
