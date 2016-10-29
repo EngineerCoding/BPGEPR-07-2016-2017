@@ -6,24 +6,25 @@ from re import split
 from utils import get_line
 
 
-def reaction_number(geneid_list):
+def reaction_number(proteincode_kegg):
     """
     Every geneId in the geneid_list will be used to find all of the
     reactions.
 
-    dict_reactions = dictionary with geneID as key and all of the reaction
-    numbers(list_reactions) as a value.
+    proteincode_kegg = dictionary which contains the protein to kegg asn code
+    values.
     htmlfile = link to KEGG page that contains all of the reactions per enzyme
     """
     dict_reactions = {}
-    for x in range(len(geneid_list)):
+    for proteincode in proteincode_kegg:
         htmlfile = urllib.urlopen("http://www.genome.jp/dbget-bin/get_linkdb?"
-                                  "-t+reaction+asn:" + str(geneid_list[x]))
+                                  "-t+reaction+"
+                                  + proteincode_kegg[proteincode])
         htmltext = htmlfile.read().decode()
         htmlfile.close()
         list_reactions = search_reactionnr(htmltext)
         for i in range(len(list_reactions)):
-            dict_reactions.update({geneid_list[x]: list_reactions})
+            dict_reactions.update({proteincode: list_reactions})
     return dict_reactions
 
 
@@ -82,10 +83,9 @@ def get_reaction_data(gene_codes):
         for rcode in gene_code_rcodes[genecode]:
             kegg_api = urllib.urlopen("http://rest.kegg.jp/get/reaction:{}"
                                       .format(rcode))
-            contents = kegg_api.read().decode().split('\n')
+            reaction = get_line(kegg_api, 'DEFINITION')
+            ec = split('\s+', get_line(kegg_api, 'ENZYME'))
             kegg_api.close()
-            reaction = get_line(contents, 'DEFINITION')
-            ec = split('\s+', get_line(contents, 'ENZYME'))
             gene_code_reaction[genecode].append(dict(reaction=reaction, ec=ec,
                                                      id=rcode))
     return gene_code_reaction

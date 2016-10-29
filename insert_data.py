@@ -1,13 +1,11 @@
-#!/usr/python
-import json
-
 import psycopg2
 from os import system
 from csv import reader
 
 from location_parser import parse_location, ComplementLocation, JoinedLocation
 from pathway_pfam import get_pathway_pfam_data
-from utils import get_line
+from protein_reaction import get_reaction_data
+from utils import get_line, convert_gi_to_asn
 
 try:
     from urllib.request import urlopen
@@ -53,6 +51,20 @@ def get_accession_dictionaries():
     for acc in acc_genecode:
         genecode_proteincode[acc_genecode[acc]] = acc_proteincode[acc]
     return acc_genecode, acc_proteincode, genecode_proteincode
+
+
+def get_gi_kegg_dictionary(proteincodes):
+    proteincode2kegg = {proteincode: convert_gi_to_asn(proteincode)
+                        for proteincode in proteincodes}
+    # Find keys which contain '-' as value
+    del_keys = []
+    for proteincode in proteincode2kegg:
+        if proteincode2kegg[proteincode] == '-':
+            del_keys.append(proteincode)
+    # Delete the keys
+    for key in del_keys:
+        del proteincode2kegg[key]
+    return proteincode2kegg
 
 
 def insert_data(cursor, table, lst_data):
@@ -212,8 +224,9 @@ def insert_protein(cursor, accession_genecode, genecode_proteincode):
     insert_data(cursor, 'Eiwit_07', table_data)
 
 
-def insert_protein_reactions(cursor):
-    pass
+def insert_protein_reactions(cursor, proteincode_kegg):
+    reaction_data = get_reaction_data(proteincode_kegg)
+    print(reaction_data)
 
 
 def create_formatted_pathway_data(pathway, id, path_data, stored_authors,
@@ -308,7 +321,7 @@ def insert_domain(cursor, pfam):
     insert_data(cursor, 'EiwitDomein_07', junction_data)
 
 
-def insert_pathway_domains(cursor, genecode_protein):
+def insert_pathway_domains(cursor, proteincode_kegg):
     """ This is the main function of retrieving data for the pathway branch
     of the database and insert it into this database. The script pathway_pfam
     is responsible for retrieving all raw data for the pathway and pfam
@@ -316,14 +329,13 @@ def insert_pathway_domains(cursor, genecode_protein):
 
     Parameters:
         cursor - Cursor object. The Cursor object to execute queries on.
-        genecode_protein - dictionary. This is the dictionary which has
-        genecodes as keys and proteincodes as values.
+        proteincode_kegg - dictionary. This is the dictionary which has
+        proteincodes as keys and the kegg asn's as values.
     Returns:
         Nothing
     """
     # Retrieve the actual data
-    pathway, pfam = get_pathway_pfam_data([genecode_protein[k] for k in
-                                           genecode_protein])
+    pathway, pfam = get_pathway_pfam_data(proteincode_kegg)
     # Insert domain info
     insert_domain(cursor, pfam)
     # Insert the pathways, reference and the authors
@@ -358,14 +370,16 @@ def insert_pathway_domains(cursor, genecode_protein):
 def main():
     prep_inserting()
     genecode, proteincode, genecode2proteincode = get_accession_dictionaries()
+    proteincode2kegg = get_gi_kegg_dictionary([code for code in 
+                                               proteincode.values()])
     connection = psycopg2.connect(host="localhost", dbname="postgres",
                                   user="postgres", password="MyPassword")
     cursor = connection.cursor()
     insert_gene_exon(cursor, genecode)
     insert_protein(cursor, genecode, genecode2proteincode)
     connection.commit()
-    insert_protein_reactions(cursor)
-    insert_pathway_domains(cursor, genecode2proteincode)
+    insert_protein_reactions(cursor, proteincode2kegg)
+    insert_pathway_domains(cursor, proteincode2kegg)
     connection.commit()
     connection.close()
 

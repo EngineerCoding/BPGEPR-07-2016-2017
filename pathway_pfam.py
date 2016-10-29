@@ -4,26 +4,6 @@ except ImportError:
     import urllib
 from re import split, search
 from utils import get_line
-from json import loads
-
-
-def get_asn(protein_code):
-    """ Does the API call to retrieve the ASN code for the protein code.
-
-    Arguments:
-        protein_code - string or int. The protein code which the API needs
-        to convert to an ASN code.
-    Returns:
-        When available, the asn code.
-    """
-    connection = urllib.urlopen(
-        'https://biodbnet-abcc.ncifcrf.gov/webServices/rest.php/biodbnetRestAp'
-        'i.json?method=db2db&input=ginumber&inputValues={}&outputs=kegggeneid&'
-        'format=row'.format(str(protein_code)))
-    # Only read the first line
-    json = loads(connection.read().decode())
-    connection.close()
-    return json[0]['KEGG Gene ID']
 
 
 def get_pathways_pfams(asncode):
@@ -139,13 +119,11 @@ def get_pfam_data(pfam):
     return pfam_data
 
 
-def get_pathway_pfam_data(protein_codes):
+def get_pathway_pfam_data(proteincode_kegg):
     pathways, pfams = {}, {}
-    for protein_code in protein_codes:
-        asn_code = get_asn(protein_code)
-        if asn_code == '-':
-            continue
-        pathway_list, pfam_list = get_pathways_pfams(asn_code)
+    for protein_code in proteincode_kegg:
+        pathway_list, pfam_list = get_pathways_pfams(
+            proteincode_kegg[protein_code])
         # Handle pathway data
         pathways[protein_code] = {}
         for pathway in pathway_list:
