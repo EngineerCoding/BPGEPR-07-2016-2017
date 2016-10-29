@@ -272,8 +272,40 @@ def insert_reference_author_junction(cursor, ref_author_links):
     insert_data(cursor, 'ReferentieAuteur_07', reference_author_data)
 
 
-def insert_domain(cursor, genecode_protein, pfam):
-    pass
+def insert_domain(cursor, pfam):
+    """ Inserts all the data for the domain table in the database. Also
+    inserts the associated junction table with it.
+
+    Parameters:
+        cursor - Cursor object. The cursor to execute queries from.
+        pfam - dictionary. The dictionary containing all the pfam data which
+        is retrieved by get_pathway_pfam_data.
+    Returns:
+        Nothing
+    """
+    junction_data, domain_data, domain_indices = [], [], []
+    for protein_code in pfam:
+        for domain in pfam[protein_code]:
+            if domain in domain_indices:
+                # Only a junction row entry has to be made
+                junction_data.append({'eiwit_id': protein_code,
+                                      'domein_id': (domain_indices
+                                                    .index(domain) + 1)})
+                continue
+            domain_indices.append(domain)
+            # Create new domain row
+            d = pfam[protein_code][domain]
+            domain_row = {'domein_naam': domain,
+                          'gem_domein_lengte': d['av_length'],
+                          'gem_alignment_coverage': d['percentage_identity'],
+                          'gem_sequentie_coverage': d['av_coverage']}
+            domain_data.append(domain_row)
+            # Create the junction row
+            junction_data.append({'eiwit_id': protein_code,
+                                  'domein_id': len(domain_indices)})
+    # Insert the actual data to tables
+    insert_data(cursor, 'Domein_07', domain_data)
+    insert_data(cursor, 'EiwitDomein_07', junction_data)
 
 
 def insert_pathway_domains(cursor, genecode_protein):
@@ -293,7 +325,7 @@ def insert_pathway_domains(cursor, genecode_protein):
     pathway, pfam = get_pathway_pfam_data([genecode_protein[k] for k in
                                            genecode_protein])
     # Insert domain info
-    insert_domain(cursor, genecode_protein, pfam)
+    insert_domain(cursor, pfam)
     # Insert the pathways, reference and the authors
     stored_pathways, stored_authors, pathway_data = [], [], []
     author_data, reference_data = [], []

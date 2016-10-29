@@ -69,6 +69,12 @@ CREATE TABLE Referentie_07 (
   FOREIGN KEY (pathway_id) REFERENCES Pathway_07(pathway_id)
 );
 
+DROP TABLE IF EXISTS Auteur_07 CASCADE;
+CREATE TABLE Auteur_07 (
+  auteur_id   SERIAL PRIMARY KEY,
+  auteur_naam TEXT
+);
+
 DROP TABLE IF EXISTS ReferentieAuteur_07 CASCADE;
 CREATE TABLE ReferentieAuteur_07 (
   auteur_id SERIAL,
@@ -78,18 +84,13 @@ CREATE TABLE ReferentieAuteur_07 (
   FOREIGN KEY (referentie_id) REFERENCES Referentie_07(referentie_id)
 );
 
-DROP TABLE IF EXISTS Auteur_07 CASCADE;
-CREATE TABLE Auteur_07 (
-  auteur_id   SERIAL PRIMARY KEY,
-  auteur_naam TEXT
-);
-
 DROP TABLE IF EXISTS Domein_07 CASCADE;
 CREATE TABLE Domein_07 (
   domein_id SERIAL PRIMARY KEY,
-  gem_domein_lengte NUMERIC(3,2),
-  gem_alignment_coverage NUMERIC(3,2),
-  gem_sequentie_coverage NUMERIC(3,2)
+  domein_naam TEXT,
+  gem_domein_lengte NUMERIC(5,2),
+  gem_alignment_coverage NUMERIC(5,2),
+  gem_sequentie_coverage NUMERIC(5,2)
 );
 
 DROP TABLE IF EXISTS EiwitDomein_07 CASCADE;

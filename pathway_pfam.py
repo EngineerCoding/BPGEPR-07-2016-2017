@@ -141,17 +141,17 @@ def get_pfam_data(pfam):
 
 def get_pathway_pfam_data(protein_codes):
     pathways, pfams = {}, {}
-    for gene_code in protein_codes:
-        asn_code = get_asn(gene_code)
+    for protein_code in protein_codes:
+        asn_code = get_asn(protein_code)
         if asn_code == '-':
             continue
         pathway_list, pfam_list = get_pathways_pfams(asn_code)
         # Handle pathway data
-        pathways[gene_code] = {}
+        pathways[protein_code] = {}
         for pathway in pathway_list:
-            pathways[gene_code][pathway] = get_pathway_data(pathway)
+            pathways[protein_code][pathway] = get_pathway_data(pathway)
         # Handle Pfam data
-        pfams[gene_code] = {}
+        pfams[protein_code] = {}
         for pfam in pfam_list:
-            pfams[gene_code][pfam] = get_pfam_data(pfam)
+            pfams[protein_code][pfam] = get_pfam_data(pfam)
     return pathways, pfams
