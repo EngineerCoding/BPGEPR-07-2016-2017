@@ -7,13 +7,12 @@ from utils import get_line
 
 
 def reaction_number(proteincode_kegg):
-    """
-    Every geneId in the geneid_list will be used to find all of the
-    reactions.
+    """ Every kegg proteincdoe will be used to find all reaction numbers by
+    parsing a HTML file.
 
-    proteincode_kegg = dictionary which contains the protein to kegg asn code
-    values.
-    htmlfile = link to KEGG page that contains all of the reactions per enzyme
+    Parameters:
+        proteincode_kegg - dictionary. A dictionary with proteincodes as
+        keys and kegg proteincodes as values.
     """
     dict_reactions = {}
     for proteincode in proteincode_kegg:
