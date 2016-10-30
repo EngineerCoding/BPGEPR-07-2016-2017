@@ -4,6 +4,7 @@ except ImportError:
     import urllib
 from re import split, search
 from utils import get_line
+from collections import OrderedDict
 
 
 def get_pathways_pfams(asncode):
@@ -120,16 +121,47 @@ def get_pfam_data(pfam):
 
 
 def get_pathway_pfam_data(proteincode_kegg):
-    pathways, pfams = {}, {}
+    """ Downloads all the data and stores this for the pathway and domain
+    data. This is done in an efficient way: a file is only downloaded once
+    and reused which reduses the execution time of the complete script since
+    there is less to be downloaded.
+
+    Parameters:
+        proteincode_kegg - dictionary. The dictionary containing proteincodes
+        as keys and kegg asn numbers as values.
+    Return:
+        pathway - dictionary. The key represents the asn code for the pathway
+        and the value is another dictionary with the name, class and
+        publications.
+        pathway_links - dictionary. The key represents a proteincode and the
+        values are the asn codes for the pathways.
+        domains - dictionary. The key represents the name of a domain and the
+        values are dictionaries with the information associated with that
+        domain.
+        domain_links - dictionary. The key represents the proteincode and the
+        value is the correct index to the correct domain in the database.
+    """
+    stored_pathways, stored_domains = [], []
+    pathway, domains = {}, OrderedDict()
+    pathway_links, domain_links = {}, {}
+    # handle each protein code
     for protein_code in proteincode_kegg:
         pathway_list, pfam_list = get_pathways_pfams(
             proteincode_kegg[protein_code])
         # Handle pathway data
-        pathways[protein_code] = {}
-        for pathway in pathway_list:
-            pathways[protein_code][pathway] = get_pathway_data(pathway)
+        pathway_links[protein_code] = pathway_list
+        for pcode in pathway_list:
+            if pcode not in stored_pathways:
+                pathway[pcode] = get_pathway_data(pcode)
+                stored_pathways.append(pcode)
         # Handle Pfam data
-        pfams[protein_code] = {}
+        domain_links[protein_code] = []
         for pfam in pfam_list:
-            pfams[protein_code][pfam] = get_pfam_data(pfam)
-    return pathways, pfams
+            if pfam not in stored_domains:
+                stored_domains.append(pfam)
+                domains[pfam] = get_pfam_data(pfam)
+                domain_links[protein_code].append(len(stored_domains) + 1)
+            else:
+                domain_links[protein_code].append(stored_domains.index(pfam)
+                                                  + 1)
+    return pathway, pathway_links, domains, domain_links

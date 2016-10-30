@@ -335,33 +335,44 @@ def insert_pathway_domains(cursor, proteincode_kegg):
         Nothing
     """
     # Retrieve the actual data
-    pathway, pfam = get_pathway_pfam_data(proteincode_kegg)
+    paths, path_links, pfams, pfam_links = get_pathway_pfam_data(
+        proteincode_kegg)
     # Insert domain info
-    insert_domain(cursor, pfam)
-    # Insert the pathways, reference and the authors
-    stored_pathways, stored_authors, pathway_data = [], [], []
-    author_data, reference_data = [], []
-    reference_author_links, protein_links = {}, {}
-    for protein_code in pathway:
-        # If no pathways are available, the algorithm will not work
-        if len(pathway[protein_code]) == 0:
-            continue
-        # Make a link with the protein code to the pathway id
-        for pathwaycode in pathway[protein_code]:
-            protein_links[protein_code] = pathwaycode
-            # If not stored yet, create an entry
-            if pathwaycode not in stored_pathways:
-                create_formatted_pathway_data(
-                    pathway[protein_code][pathwaycode], pathwaycode,
-                    pathway_data, stored_authors, author_data,
-                    reference_author_links, reference_data)
-                stored_pathways.append(pathwaycode)
+   # insert_domain(cursor, pfams, pfam_links)
+    # Convert pathway links to the actual junction table
+    protein_links = [{'eiwit_id': k, 'pathway_id': asn}
+                     for k in path_links for asn in path_links[k]]
+    # Convert the pathway data to the table format
+    # Also do this for the references and authors (since this is cascaded)
+    pathway_data, stored_authors, author_data = [], [], []
+    reference_author_links, reference_data = {}, []
+    for pathway_code in paths:
+        create_formatted_pathway_data(paths[pathway_code], pathway_code,
+                                      pathway_data, stored_authors,
+                                      author_data,
+                                      reference_author_links, reference_data)
+
+    # stored_pathways, stored_authors, pathway_data = [], [], []
+    # author_data, reference_data = [], []
+    # reference_author_links, protein_links = {}, {}
+    # for protein_code in pathway:
+    #     # If no pathways are available, the algorithm will not work
+    #     if len(pathway[protein_code]) == 0:
+    #         continue
+    #     # Make a link with the protein code to the pathway id
+    #     for pathwaycode in pathway[protein_code]:
+    #         protein_links[protein_code] = pathwaycode
+    #         # If not stored yet, create an entry
+    #         if pathwaycode not in stored_pathways:
+    #             create_formatted_pathway_data(
+    #                 pathway[protein_code][pathwaycode], pathwaycode,
+    #                 pathway_data, stored_authors, author_data,
+    #                 reference_author_links, reference_data)
+    #             stored_pathways.append(pathwaycode)
     # Insert all the data
     insert_data(cursor, 'Pathway_07', pathway_data)
     # Use correct format for the protein - pathway junction table
-    insert_data(cursor, 'EiwitPathway_07',
-                [{'eiwit_id': k, 'pathway_id': protein_links[k]} for k in
-                 protein_links])
+    insert_data(cursor, 'EiwitPathway_07', protein_links)
     insert_data(cursor, 'Referentie_07', reference_data)
     insert_data(cursor, 'Auteur_07', author_data)
     insert_reference_author_junction(cursor, reference_author_links)
