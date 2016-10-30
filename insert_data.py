@@ -351,24 +351,6 @@ def insert_pathway_domains(cursor, proteincode_kegg):
                                       pathway_data, stored_authors,
                                       author_data,
                                       reference_author_links, reference_data)
-
-    # stored_pathways, stored_authors, pathway_data = [], [], []
-    # author_data, reference_data = [], []
-    # reference_author_links, protein_links = {}, {}
-    # for protein_code in pathway:
-    #     # If no pathways are available, the algorithm will not work
-    #     if len(pathway[protein_code]) == 0:
-    #         continue
-    #     # Make a link with the protein code to the pathway id
-    #     for pathwaycode in pathway[protein_code]:
-    #         protein_links[protein_code] = pathwaycode
-    #         # If not stored yet, create an entry
-    #         if pathwaycode not in stored_pathways:
-    #             create_formatted_pathway_data(
-    #                 pathway[protein_code][pathwaycode], pathwaycode,
-    #                 pathway_data, stored_authors, author_data,
-    #                 reference_author_links, reference_data)
-    #             stored_pathways.append(pathwaycode)
     # Insert all the data
     insert_data(cursor, 'Pathway_07', pathway_data)
     # Use correct format for the protein - pathway junction table
