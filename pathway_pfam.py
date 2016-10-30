@@ -160,7 +160,7 @@ def get_pathway_pfam_data(proteincode_kegg):
             if pfam not in stored_domains:
                 stored_domains.append(pfam)
                 domains[pfam] = get_pfam_data(pfam)
-                domain_links[protein_code].append(len(stored_domains) + 1)
+                domain_links[protein_code].append(len(stored_domains))
             else:
                 domain_links[protein_code].append(stored_domains.index(pfam)
                                                   + 1)

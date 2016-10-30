@@ -165,7 +165,7 @@ def insert_gene_exon(cursor, accesion_genecode):
         # Read data from the nucleotide genbank file such as, name,
         # exon location and sequence.
         path = 'protein_genbank_files/{}.gb'.format(accession)
-        with open(path, 'r') as genbank:
+        with open(path, 'rb') as genbank:
             # Get the gene name
             definition_line = get_line(genbank, 'DEFINITION')
             line = genbank.readline()
@@ -197,7 +197,7 @@ def insert_protein(cursor, accession_genecode, genecode_proteincode):
     """
     # First map proteincode to its name
     protein_names = {}
-    with open('outputs/proteincodes', 'r') as file:
+    with open('outputs/proteincodes', 'rb') as file:
         for row in reader(file, delimiter=' '):
             proteincode = row[1]
             del row[1], row[0]
@@ -215,10 +215,10 @@ def insert_protein(cursor, accession_genecode, genecode_proteincode):
                    eiwit_naam=protein_names[proteincode])
         # Retrieve the sequence
         path = 'protein_genbank_files/{}.gb'.format(gene_accession[genecode])
-        with open(path, 'r') as genbank:
+        with open(path, 'rb') as genbank:
             sequence = get_line(genbank, '/translation="')
             while sequence[-1] != '"':
-                sequence += genbank.readline().strip()
+                sequence += genbank.readline().decode().strip()
             row['eiwit_sequentie'] = sequence[:-1]
         table_data.append(row)
     insert_data(cursor, 'Eiwit_07', table_data)
@@ -285,7 +285,7 @@ def insert_reference_author_junction(cursor, ref_author_links):
     insert_data(cursor, 'ReferentieAuteur_07', reference_author_data)
 
 
-def insert_domain(cursor, pfam):
+def insert_domain(cursor, pfam, pfam_links):
     """ Inserts all the data for the domain table in the database. Also
     inserts the associated junction table with it.
 
@@ -293,29 +293,22 @@ def insert_domain(cursor, pfam):
         cursor - Cursor object. The cursor to execute queries from.
         pfam - dictionary. The dictionary containing all the pfam data which
         is retrieved by get_pathway_pfam_data.
+        pfam_links - dictionary. The dictionary containing the raw junction
+        table data.
     Returns:
         Nothing
     """
-    junction_data, domain_data, domain_indices = [], [], []
-    for protein_code in pfam:
-        for domain in pfam[protein_code]:
-            if domain in domain_indices:
-                # Only a junction row entry has to be made
-                junction_data.append({'eiwit_id': protein_code,
-                                      'domein_id': (domain_indices
-                                                    .index(domain) + 1)})
-                continue
-            domain_indices.append(domain)
-            # Create new domain row
-            d = pfam[protein_code][domain]
-            domain_row = {'domein_naam': domain,
-                          'gem_domein_lengte': d['av_length'],
-                          'gem_alignment_coverage': d['percentage_identity'],
-                          'gem_sequentie_coverage': d['av_coverage']}
-            domain_data.append(domain_row)
-            # Create the junction row
-            junction_data.append({'eiwit_id': protein_code,
-                                  'domein_id': len(domain_indices)})
+    # Generate junction data
+    junction_data = [{'eiwit_id': p, 'domein_id': d}
+                     for p in pfam_links for d in pfam_links[p]]
+    # Generate the actual table data
+    domain_data = []
+    for d in pfam:
+        instance = {'domein_naam': d,
+                    'gem_domein_lengte': pfam[d]['av_length'],
+                    'gem_alignment_coverage': pfam[d]['percentage_identity'],
+                    'gem_sequentie_coverage': pfam[d]['av_coverage']}
+        domain_data.append(instance)
     # Insert the actual data to tables
     insert_data(cursor, 'Domein_07', domain_data)
     insert_data(cursor, 'EiwitDomein_07', junction_data)
@@ -338,7 +331,7 @@ def insert_pathway_domains(cursor, proteincode_kegg):
     paths, path_links, pfams, pfam_links = get_pathway_pfam_data(
         proteincode_kegg)
     # Insert domain info
-   # insert_domain(cursor, pfams, pfam_links)
+    insert_domain(cursor, pfams, pfam_links)
     # Convert pathway links to the actual junction table
     protein_links = [{'eiwit_id': k, 'pathway_id': asn}
                      for k in path_links for asn in path_links[k]]
@@ -363,14 +356,13 @@ def insert_pathway_domains(cursor, proteincode_kegg):
 def main():
     prep_inserting()
     genecode, proteincode, genecode2proteincode = get_accession_dictionaries()
-    proteincode2kegg = get_gi_kegg_dictionary([code for code in 
+    proteincode2kegg = get_gi_kegg_dictionary([code for code in
                                                proteincode.values()])
     connection = psycopg2.connect(host="localhost", dbname="postgres",
                                   user="postgres", password="MyPassword")
     cursor = connection.cursor()
     insert_gene_exon(cursor, genecode)
     insert_protein(cursor, genecode, genecode2proteincode)
-    connection.commit()
     insert_protein_reactions(cursor, proteincode2kegg)
     insert_pathway_domains(cursor, proteincode2kegg)
     connection.commit()
