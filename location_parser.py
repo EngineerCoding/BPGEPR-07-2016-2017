@@ -500,6 +500,5 @@ def __create_func_mapping(name, func, one_arg=False, sub_func=False,
 function_mapping = [
     __create_func_mapping('complement', ComplementLocation, True, False,
                           True),
-    __create_func_mapping('join', JoinedLocation, False, True, False),
-    # __create_func_mapping('order', __parse_order, False, True, False)
+    __create_func_mapping('join', JoinedLocation, False, True, False)
 ]
