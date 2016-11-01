@@ -1,5 +1,8 @@
 class LocationType:
-    """ All the location types which can occur in a Genbank file """
+    """ All the location types which can occur in a Genbank file. This is used
+    in every Location object on the 'static' variable type to identify each
+    location object. This might be redundant, as isinstance exists.
+    """
     single_base = 'single_base'
     adjoining = 'adjoining'
     single_base_range = 'single_base_range'  # Unclear what this is
@@ -8,14 +11,20 @@ class LocationType:
 
 
 class AdjoiningLocationType:
-    """ All the types of Adjoining"""
+    """ All the types of Adjoining LocationType."""
     endonucleolytic = 'endonucleolytic'
     circulair = 'circulair'
 
 
 class Location(object):
     """ The base type of location which implement the most basic methods
-    for sub classes.
+    for sub classes. Each instance has a first and second variable which
+    represents the range of this location. In some cases, like single_base,
+    first and second can be the same and thus should not be relied on.
+    The actual methods on a location object should be used to make sure the
+    correct data is returned: this data may be manipulated.
+
+    Please refer to method documentations to view what this can do.
     """
 
     type = None  # Type of the location
@@ -48,7 +57,7 @@ class Location(object):
         Parameters:
             position - Location object
         Returns:
-            boolean suc
+            boolean success
         """
         return position not in self and isinstance(position, Location)
 
@@ -174,12 +183,26 @@ class DelimitedLocation(Location):
         self._parse_right(split[len(split) - 1])
 
     def _parse_left(self, string):
+        """ This method parses the left side of the delimiter.
+        Parameters:
+            string. This is the left side of the delimiter in the string.
+        """
         raise NotImplementedError
 
     def _parse_right(self, string):
+        """ This method parses the right side of the delimiter.
+        Parameters:
+            string. This is the right side of the delimiter in the string.
+        """
         raise NotImplementedError
 
     def _parse_in_between(self, string):
+        """ This method will parse everything but the most left and most right
+        elements of the delimiter. By default this method will raise an error
+        since most of the time it is not allowed to have multiple delimiters.
+        Parameters:
+            string. This one element that is in between delimiters.
+        """
         raise ValueError('Too many ' + self.delimiter + ' have been used!')
 
     def __str__(self):
@@ -280,9 +303,6 @@ class RemoteLocation(DelimitedLocation):
     def get_accession(self):
         return self.accession
 
-    def to_sequence(self, sequence, alt_sequence=None):
-        return self.location.to_sequence(sequence, alt_sequence)
-
     def __contains__(self, item):
         if isinstance(item, RemoteLocation) and \
                         item.accession == self.accession:
@@ -299,7 +319,7 @@ class RemoteLocation(DelimitedLocation):
 class JoinedLocation(Location):
     """ Representation of a joined operator in the location object.
     Looks like:
-        joined(range, range)
+        join(range, range)
          Where range represents a RangeLocation
     """
 
@@ -352,33 +372,36 @@ class JoinedLocation(Location):
         for location in self.locations:
             yield location.get_range()
 
-    def to_sequence(self, sequence, alt_sequence=None):
-        generated_sequence = ''
-        for location in self.locations:
-            generated_sequence += location.to_sequence(sequence, alt_sequence)
-        return generated_sequence
-
 
 class ComplementLocation(JoinedLocation):
+    """ This will represent the complement of a location. This class has
+    been derived from JoinedLocation because a JoinedLocation can be
+    complement and a JoinedLocation imitates other locations as well.
+
+    Looks like:
+        complement(<location>)
+    """
+
     def __init__(self, location):
         super(ComplementLocation, self).__init__(location)
 
     def get_translated_joined(self, genome_length):
+        """ Generates the actual location on the primary strand. This will be
+        represented in a JoinedLocation as well.
+
+        Parameters:
+            genome_length - int. The length of the genome to calculate on.
+            This actually should be the length of the complete sequence,
+            because usually locations are relative and not absolute.
+        Returns:
+            A new JoinedLocation
+        """
         new_locations = []
         for location in self.locations:
             first = genome_length - location.second + 1
             second = location.second - location.first + first
             new_locations.append(RangeLocation('{}..{}'.format(first, second)))
         return JoinedLocation(*new_locations)
-
-    def get_complement_sequences(self, sequence):
-        sequences = []
-        locations = self.get_translated_joined(sequence.lenght()).locations
-        complement_sequence = sequence.get_complement_sequence()
-        for location in locations:
-           sequences.append(complement_sequence
-                            .get_sequence_from_location(location))
-        return sequences
 
 
 def _convert(var_type, string):
@@ -391,11 +414,22 @@ def _convert(var_type, string):
 
 def parse_location(location_string):
     """ The main parser function which parses a string to a location
-    object.
+    object. A lot of types of locations are supported:
+        complement(<location>)
+        join(2..66, 78..101)
+        78..101
+        <78..101
+        78..>101
+        XM_12345:<location>
+        65^1
+    The only that is not supported yet, is the order function. Generally, this
+    function is not available in location strings and thus not mandatory.
 
     Parameters:
         location_string - string
             The string to parse to a Location object
+    Returns:
+        A corresponding Location object
     """
     location = __parse_string_arguments(location_string.strip())
     if len(location) > 1:

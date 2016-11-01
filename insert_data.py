@@ -13,12 +13,6 @@ except ImportError:
     from urllib import urlopen
 
 
-def prep_inserting():
-    system('bash deelopdracht\\ B.sh')
-    # Execute CREATE statements
-    pass
-
-
 def get_accession_dictionaries():
     """ Generates 3 dictionaries:
     1. accession to genecode
@@ -54,6 +48,16 @@ def get_accession_dictionaries():
 
 
 def get_gi_kegg_dictionary(proteincodes):
+    """ Converts a list of proteincodes to a dictionary with proteincodes as
+    keys and kegg protein codes as values.
+
+    Parameters:
+        proteincodes - list. A list of proteincodes.
+    Returns
+        A dictionary containing regular proteincodes as keys and KEGG
+        proteincodes as values.
+    """
+    # Do the actual conversion
     proteincode2kegg = {proteincode: convert_gi_to_asn(proteincode)
                         for proteincode in proteincodes}
     # Find keys which contain '-' as value
@@ -83,7 +87,8 @@ def insert_data(cursor, table, lst_data):
     """
     query = 'INSERT INTO {} ({}) VALUES ({});'
     for query_data in lst_data:
-        # Create lists with the column names and values
+        # Create lists with the column names and values, so it can be
+        # formatted correctluy in the query
         columns = []
         values = []
         for column in query_data:
@@ -91,8 +96,8 @@ def insert_data(cursor, table, lst_data):
             values.append(query_data[column])
         # Generate the columns string for the query
         columns = ", ".join(columns)
-        # Generate the values string for the query
         holders = ', '.join(['%s' for _ in range(len(values))])
+        # Execute the query with the values
         cursor.execute(query.format(table, columns, holders), values)
 
 
@@ -225,6 +230,21 @@ def insert_protein(cursor, accession_genecode, genecode_proteincode):
 
 
 def insert_protein_reactions(cursor, proteincode_kegg):
+    """ Retrieves and inserts data to the 'Reactie_07' and 'EiwitReactie_07'
+    tables. The latter table is the junction table.
+
+    First this will retrieve the information from the file
+    'protein_reaction.py' and generates a junction table with that. Then it
+    simply creates a list for the regular table data. This function is
+    basically here for the correct formatting of the retrieved data.
+
+    Parameters:
+        cursor - Cursor object. The cursor object to execute queries on.
+        proteincode_kegg - dictionary. This is the dictionary with
+        proteincodes as keys and KEGG proteincodes as values.
+    Returns:
+        Nothing
+    """
     proteincode_reaction, reactions = get_reaction_data(proteincode_kegg)
     protein_reaction = [{"eiwit_id": p, "reactie_id": r}
                         for p in proteincode_reaction for r in
@@ -361,7 +381,22 @@ def insert_pathway_domains(cursor, proteincode_kegg):
 
 
 def main():
-    prep_inserting()
+    """ This is the main function for the complete script. It first will
+    blast all sequences against the genome of Alligator sinensis and then
+    extract all data out of this BLAST. Then it will download all genbank
+    protein files of the given genes, and extract data from those.
+
+    This all is done in the 'deelopdracht B.sh' bash script. This algorithm
+    then will generate the required dictionaries which are required to
+    retrieve all required data. Then a connection to the database is made,
+    and will execute all CREATE queries. Then in the defined insert functions
+    all data is inserted to the database.
+
+    Finally the connection is committed, meaning that it will be saved by the
+    database and connection is closed to cleanup open resources of the
+    database.
+    """
+    system('bash deelopdracht\\ B.sh')
     genecode, proteincode, genecode2proteincode = get_accession_dictionaries()
     proteincode2kegg = get_gi_kegg_dictionary([code for code in
                                                proteincode.values()])

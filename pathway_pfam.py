@@ -31,8 +31,6 @@ def get_pathways_pfams(asncode):
     pfams = []
     pfam_string = get_line(connection, 'MOTIF')
     if pfam_string:
-        # Check if the line starts with Pfam, otherwise these are not Pfam
-        # families
         if pfam_string.startswith('Pfam:'):
             pfams = split('\s+', pfam_string[5:].lstrip())
     # Close the connection

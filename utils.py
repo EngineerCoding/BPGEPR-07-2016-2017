@@ -20,6 +20,7 @@ def get_line(lines, starting):
     """
     line = lines.readline()
     while line:
+        # Decode if we are reading bytes
         if isinstance(line, bytes):
             line = line.decode()
         line = line.strip()

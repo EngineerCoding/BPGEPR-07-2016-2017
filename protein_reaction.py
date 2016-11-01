@@ -7,74 +7,97 @@ from utils import get_line
 
 
 def reaction_number(proteincode_kegg):
-    """ Every kegg proteincdoe will be used to find all reaction numbers by
-    parsing a HTML file.
+    """ Every kegg proteincode will be used to find all reaction numbers by
+    parsing a HTML file. This HTML file contains the R codes specific for the
+    protein.
 
     Parameters:
         proteincode_kegg - dictionary. A dictionary with proteincodes as
         keys and kegg proteincodes as values.
+    Returns:
+        A dictionary containing proteincodes as keys and as value there will
+        be a list with Rcodes.
     """
     dict_reactions = {}
     for proteincode in proteincode_kegg:
-        htmlfile = urllib.urlopen("http://www.genome.jp/dbget-bin/get_linkdb?"
+        html_file = urllib.urlopen("http://www.genome.jp/dbget-bin/get_linkdb?"
                                   "-t+reaction+"
                                   + proteincode_kegg[proteincode])
-        htmltext = htmlfile.read().decode()
-        htmlfile.close()
-        list_reactions = search_reactionnr(htmltext)
+        html_text = html_file.read().decode()
+        html_file.close()
+        list_reactions = search_reaction_nr(html_text)
         for i in range(len(list_reactions)):
-            dict_reactions.update({proteincode: list_reactions})
+            dict_reactions[proteincode] = list_reactions
     return dict_reactions
 
 
-def search_reactionnr(htmltext):
-    """ Searches for the reaction numbers in the html text
+def search_reaction_nr(html_text):
+    """ This function actually searches for the reaction number and collects
+    them.
 
     Parameters:
-        htmltext - string.
+        html_text - string. The text of the HTML file which contains Rcodes.
     Returns:
         A list of reaction numbers which can be used in the KEGG API.
     """
-    tag = 0
+    tag = False
     collection = ""
     all_reactions = []
     reaction_nr = ""
-    for char in htmltext:
-        if char == '>' and tag == 0:
+    for char in html_text:
+        if char == '>' and not tag:
             collection = ""
         else:
             collection += char
-        if collection == 'R' and tag == 0:
-            tag = 1
-        tag, reaction_nr, all_reactions = tag_reactionnr(char, tag,
-                                                         all_reactions,
-                                                         reaction_nr)
+        if collection == 'R' and not tag:
+            tag = True
+        tag, reaction_nr, all_reactions = tag_reaction_nr(char, tag,
+                                                          all_reactions,
+                                                          reaction_nr)
     return all_reactions
 
 
-def tag_reactionnr(char, tag, all_reactions, reaction_nr):
-    """
-    Whenever a specific part in the html code is tagged (tag = 1), add
-    all of the following characters ( char) to the string reaction_nr.
+def tag_reaction_nr(char, tag, all_reactions, reaction_nr):
+    """ Whenever a specific part in the html code is tagged (tag = True), add
+    all of the following characters (char) to the string reaction_nr.
 
-    tag = indicates when text is tagged
-    char = character in text
-    reaction_nr = string containg reactionnumber
-    all_reactions = contains all reaction numbers
+    Parameters:
+        tag - boolean. Indicates when text is tagged.
+        char - string. Character in text.
+        reaction_nr - string. Contains the reaction number.
+        all_reactions - list. Contains all reaction numbers.
+    Returns:
+        tag - boolean.
+        reaction_nr - string.
+        all_reactions - list.
     """
-    if tag == 1:
+    if tag:
         if char != "<":
             reaction_nr += char
         else:
             all_reactions.append(reaction_nr)
             reaction_nr = ""
-            tag = 0
+            tag = False
     return tag, reaction_nr, all_reactions
 
 
-def get_reaction_data(gene_codes):
-    # Get reaction R codes
-    proteincodes_rcodes = reaction_number(gene_codes)
+def get_reaction_data(proteincode_kegg):
+    """ This is the main function which handles all functions in this file. It
+    takes a list a dictionary with proteincodes and KEGG proteincodes and
+    converts this in a dictionary with proteincodes linked to the reaction and
+    a dictionary with the actual reaction data.
+
+    Parameters:
+        proteincode_kegg - dictionary. A dictionary with proteincodes as keys
+        and KEGG proteincodes as values.
+    Returns:
+        1. A dictionary with proteincodes as keys and reaction codes as values.
+        This represents the linkage between proteins and reactions.
+        2. A dictionary with rcodes as keys and a dictionary with 'reaction',
+        'ec' and 'id' as keys and thus contains the information for the
+        reactions.
+    """
+    proteincodes_rcodes = reaction_number(proteincode_kegg)
     proteincode_reaction = {}
     reaction = {}
     for proteincode in proteincodes_rcodes:
