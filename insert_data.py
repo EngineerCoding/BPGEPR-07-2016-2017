@@ -365,8 +365,8 @@ def main():
     genecode, proteincode, genecode2proteincode = get_accession_dictionaries()
     proteincode2kegg = get_gi_kegg_dictionary([code for code in
                                                proteincode.values()])
-    connection = psycopg2.connect(host="localhost", dbname="postgres",
-                                  user="Bpgepr161707", password="****")
+    connection = psycopg2.connect(dbname="postgres", user="Bpgepr161707", 
+                                  password="****")
     cursor = connection.cursor()
     insert_gene_exon(cursor, genecode)
     insert_protein(cursor, genecode, genecode2proteincode)
