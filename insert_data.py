@@ -225,16 +225,13 @@ def insert_protein(cursor, accession_genecode, genecode_proteincode):
 
 
 def insert_protein_reactions(cursor, proteincode_kegg):
-    reaction_data = get_reaction_data(proteincode_kegg)
-    protein_reaction = []
-    reaction = []
-    for protein_code in reaction_data:
-        for values in reaction_data[protein_code]:
-            protein_reaction.append({'eiwit_id': protein_code,
-                                     'reactie_id': values['id']})
-            reaction.append({'reactie_id': values['id'],
-                             'reactie': values['reaction'],
-                             'reactie_ec' : values['ec'][0]})
+    proteincode_reaction, reactions = get_reaction_data(proteincode_kegg)
+    protein_reaction = [{"eiwit_id": p, "reactie_id": r}
+                        for p in proteincode_reaction for r in
+                        proteincode_reaction[p]]
+    reaction = [{'reactie_id': id, 'reactie': reactions[id]['reaction'],
+                 'reactie_ec': reactions[id]['ec'][0]}
+                for id in reactions]
     insert_data(cursor, 'Reactie_07', reaction)
     insert_data(cursor, 'EiwitReactie_07', protein_reaction)
 

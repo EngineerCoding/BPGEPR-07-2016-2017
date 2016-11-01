@@ -74,17 +74,21 @@ def tag_reactionnr(char, tag, all_reactions, reaction_nr):
 
 def get_reaction_data(gene_codes):
     # Get reaction R codes
-    gene_code_rcodes = reaction_number(gene_codes)
-    gene_code_reaction = {}
-    for genecode in gene_code_rcodes:
-        gene_code_reaction[genecode] = []
-        # Get all reactions for this cdoe
-        for rcode in gene_code_rcodes[genecode]:
-            kegg_api = urllib.urlopen("http://rest.kegg.jp/get/reaction:{}"
-                                      .format(rcode))
-            reaction = get_line(kegg_api, 'DEFINITION')
-            ec = split('\s+', get_line(kegg_api, 'ENZYME'))
-            kegg_api.close()
-            gene_code_reaction[genecode].append(dict(reaction=reaction, ec=ec,
-                                                     id=rcode))
-    return gene_code_reaction
+    proteincodes_rcodes = reaction_number(gene_codes)
+    proteincode_reaction = {}
+    reaction = {}
+    for proteincode in proteincodes_rcodes:
+        proteincode_reaction[proteincode] = []
+        # Get all reactions for this code
+        for rcode in proteincodes_rcodes[proteincode]:
+            if rcode not in reaction:
+                kegg_api = urllib.urlopen("http://rest.kegg.jp/get/reaction:{}"
+                                          .format(rcode))
+                reaction_line = get_line(kegg_api, 'DEFINITION')
+                ec = split('\s+', get_line(kegg_api, 'ENZYME'))
+                kegg_api.close()
+                reaction[rcode] = dict(reaction=reaction_line, ec=ec, id=rcode)
+            if proteincode not in proteincode_reaction:
+                proteincode_reaction[proteincode] = []
+            proteincode_reaction[proteincode].append(rcode)
+    return proteincode_reaction, reaction
