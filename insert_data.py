@@ -106,10 +106,10 @@ def read_sequence(file):
     """
     get_line(file, 'ORIGIN')
     sequence = ''
-    line = file.readline()
+    line = file.readline().decode()
     while line and not line.startswith('//'):
         sequence += ''.join(line.strip().split()[1:])
-        line = file.readline()
+        line = file.readline().decode()
     return sequence
 
 
@@ -168,10 +168,10 @@ def insert_gene_exon(cursor, accesion_genecode):
         with open(path, 'rb') as genbank:
             # Get the gene name
             definition_line = get_line(genbank, 'DEFINITION')
-            line = genbank.readline()
+            line = genbank.readline().decode()
             while not line.startswith('ACCESSION'):
                 definition_line += ' ' + line.strip()
-                line = genbank.readline()
+                line = genbank.readline().decode()
             row['gen_naam'] = definition_line
             exon_line = get_line(genbank, 'CDS')
             if exon_line:
@@ -197,7 +197,7 @@ def insert_protein(cursor, accession_genecode, genecode_proteincode):
     """
     # First map proteincode to its name
     protein_names = {}
-    with open('outputs/proteincodes', 'rb') as file:
+    with open('outputs/proteincodes', 'r') as file:
         for row in reader(file, delimiter=' '):
             proteincode = row[1]
             del row[1], row[0]
@@ -365,9 +365,13 @@ def main():
     genecode, proteincode, genecode2proteincode = get_accession_dictionaries()
     proteincode2kegg = get_gi_kegg_dictionary([code for code in
                                                proteincode.values()])
-    connection = psycopg2.connect(dbname="postgres", user="Bpgepr161707", 
+    connection = psycopg2.connect(dbname="postgres", user="Bpgepr161707",
                                   password="****")
+
     cursor = connection.cursor()
+    with open('create_table.sql', 'rb') as f:
+        cursor.execute(f.read().decode())
+        connection.commit()
     insert_gene_exon(cursor, genecode)
     insert_protein(cursor, genecode, genecode2proteincode)
     insert_protein_reactions(cursor, proteincode2kegg)
