@@ -1,11 +1,12 @@
 class LocationType:
-    """ All the location types which can occur in a Genbank file. This is used
-    in every Location object on the 'static' variable type to identify each
-    location object. This might be redundant, as isinstance exists.
+    """ All the location types which can occur in a Genbank file. This
+    is used in every Location object on the 'static' variable type to
+    identify each location object. This might be redundant, as
+    isinstance exists.
     """
     single_base = 'single_base'
     adjoining = 'adjoining'
-    single_base_range = 'single_base_range'  # Unclear what this is
+    single_base_range = 'single_base_range'
     range = 'range'
     remote = 'remote'
 
@@ -17,21 +18,23 @@ class AdjoiningLocationType:
 
 
 class Location(object):
-    """ The base type of location which implement the most basic methods
-    for sub classes. Each instance has a first and second variable which
-    represents the range of this location. In some cases, like single_base,
-    first and second can be the same and thus should not be relied on.
-    The actual methods on a location object should be used to make sure the
-    correct data is returned: this data may be manipulated.
+    """ The base type of location which implements the most basic
+    methods for subclasses. Each instance has a first and second
+    variable which represents the range of this location. In some
+    cases, like single_base, first and second can be the same and thus
+    should not be relied on. The actual methods on a location object
+    should be used to make sure the correct data is returned: this data
+    may be manipulated.
 
     Please refer to method documentations to view what this can do.
     """
 
-    type = None  # Type of the location
+    # Type of the location
+    type = None
 
     def __init__(self, location_string):
-        """ In the base class implementation this does nothing, but in sub
-        classes this method should parse the given location_string.
+        """ In the base class implementation this does nothing, but in
+        subclasses this method should parse the given location_string.
 
         Parameters:
             location_string - string
@@ -51,8 +54,8 @@ class Location(object):
         return self.first, self.second
 
     def _check_not_position(self, position):
-        """ This method is used to check if the position is not contained in
-        this location.
+        """ This method is used to check if the given position is not
+        contained in this location.
 
         Parameters:
             position - Location object
@@ -62,14 +65,15 @@ class Location(object):
         return position not in self and isinstance(position, Location)
 
     def get_diff(self, position):
-        """ Calculates the amount of residues the gap is between this location
-        and the given location
+        """ Calculates the amount of residues the gap is between this
+        location and the given location.
 
         Parameters:
             position - Location object
         Returns:
-            The difference between this location and the other location. When
-            the parameter is not a Location, a 0 is returned.
+            The difference between this location and the other
+            location. When the parameter is not a Location, a 0 is
+            returned.
         """
         if self._check_not_position(position):
             if position.first < self.first:
@@ -79,7 +83,7 @@ class Location(object):
         return 0
 
     def is_left(self, position):
-        """ Checks if the position is left to this location
+        """ Checks if the position is to the left of this location.
 
         Parameters:
             position - Location object
@@ -91,7 +95,7 @@ class Location(object):
         return False
 
     def is_right(self, position):
-        """ Checks if the position is right to this location
+        """ Checks if the position is to the right to this location.
 
         Parameters:
             position - Location object
@@ -100,21 +104,6 @@ class Location(object):
         """
         if self._check_not_position(position):
             return position.first > self.second
-
-    def to_sequence(self, sequence, alt_sequence=None):
-        """ Converts this location to the correct position on the given
-        sequence object.
-
-        Parameters:
-            sequence - Sequence object
-                Used to get the string sequence from
-            alt_sequence - Sequence object. Default: None
-                Should be used when this location represents a RemoteLocation
-                object and the first sequence does not have that accession.
-        Returns:
-            A string sequence representing this location
-        """
-        return sequence.get_sequence_from_location(self, alt_sequence)
 
     def __contains__(self, item):
         if isinstance(item, Location):
@@ -143,16 +132,17 @@ class SingleBaseLocation(Location):
 
 
 class DelimitedLocation(Location):
-    """ A DelimitedLocation is a sub class which can be used to easily
+    """ A DelimitedLocation is a subclass which can be used to easily
     parse locations like:
         42..56
         4^6
         etc.
-    Only the delimiter on the class has to be set on a sub class of
-    this class
+    Only the delimiter on the class has to be set on a subclass of this
+    class.
     """
 
-    delimiter = None  # The delimiter to use
+    # The delimiter to use
+    delimiter = None
 
     def __init__(self, location_string):
         """ Parses the location string using the set delimiter. When
@@ -160,12 +150,12 @@ class DelimitedLocation(Location):
         Otherwise, it will create a list with all the values using
         the delimiter as separator.
 
-        This class defines 3 methods which should be defined in sub
+        This class defines 3 methods which should be defined in sub-
         classes:
-            1. _parse_left: parses the most left item of the list
+            1. _parse_left: parses the most left item of the list.
             2. _parse_in_between: parses everything but the most left
                and most right element in the list.
-            3. _parse_right: parses the most right item of the list
+            3. _parse_right: parses the most right item of the list.
         """
         super(DelimitedLocation, self).__init__(location_string)
         # check the delimiter
@@ -185,23 +175,26 @@ class DelimitedLocation(Location):
     def _parse_left(self, string):
         """ This method parses the left side of the delimiter.
         Parameters:
-            string. This is the left side of the delimiter in the string.
+            string - string. This is the left side of the delimiter in
+            the string.
         """
         raise NotImplementedError
 
     def _parse_right(self, string):
         """ This method parses the right side of the delimiter.
         Parameters:
-            string. This is the right side of the delimiter in the string.
+            string - string. This is the right side of the delimiter in
+            the string.
         """
         raise NotImplementedError
 
     def _parse_in_between(self, string):
-        """ This method will parse everything but the most left and most right
-        elements of the delimiter. By default this method will raise an error
-        since most of the time it is not allowed to have multiple delimiters.
+        """ This method will parse everything but the most left and
+        most right elements of the delimiter. By default this method
+        will raise an error since most of the time it is not allowed to
+        have multiple delimiters in a location.
         Parameters:
-            string. This one element that is in between delimiters.
+            string - string. The element that is in between delimiters.
         """
         raise ValueError('Too many ' + self.delimiter + ' have been used!')
 
@@ -241,13 +234,13 @@ class AdjoiningLocation(DelimitedLocation):
 class RangeLocation(DelimitedLocation):
     """ Parses a range location which looks like:
          x..y
-            Where x and y or both integers and y is greater than x
+            Where x and y are both integers and y is greater than x.
          <x..y
-            Same as above, but x can be smaller than the actual
-            defined value
+            Same as above, but x can be smaller than the actual defined
+            value.
          x..>y
-            Same as above, but y can be greater than the actual
-            defined value
+            Same as above, but y can be greater than the actual defined
+            value.
     This represents a range of residues including both x and y.
     """
 
@@ -278,9 +271,9 @@ class RangeLocation(DelimitedLocation):
 class RemoteLocation(DelimitedLocation):
     """ Parses a RemoteLocation which looks like this:
          accession:location
-            Where accession is a regular accesion number and location is
-            an actual type of Location. This means to look in the given
-            accession sequence at that given location
+            Where accession is a regular accesion number and location
+            is an actual type of Location. This means to look in the
+            given accession sequence at that given location.
     """
 
     type = LocationType.remote
@@ -367,16 +360,16 @@ class JoinedLocation(Location):
         of the locations which this JoinedLocation object contains.
 
         Returns:
-            A generator which yields the range of a location
+            A generator which yields the range of a location.
         """
         for location in self.locations:
             yield location.get_range()
 
 
 class ComplementLocation(JoinedLocation):
-    """ This will represent the complement of a location. This class has
-    been derived from JoinedLocation because a JoinedLocation can be
-    complement and a JoinedLocation imitates other locations as well.
+    """ This will represent the complement of a location. This class
+    has been derived from JoinedLocation because a JoinedLocation can
+    be complement and a JoinedLocation imitates other locations as well
 
     Looks like:
         complement(<location>)
@@ -386,13 +379,14 @@ class ComplementLocation(JoinedLocation):
         super(ComplementLocation, self).__init__(location)
 
     def get_translated_joined(self, genome_length):
-        """ Generates the actual location on the primary strand. This will be
-        represented in a JoinedLocation as well.
+        """ Generates the actual location on the primary strand. This
+        will be represented in a JoinedLocation as well.
 
         Parameters:
-            genome_length - int. The length of the genome to calculate on.
-            This actually should be the length of the complete sequence,
-            because usually locations are relative and not absolute.
+            genome_length - int. The length of the genome to calculate
+            on. This actually should be the length of the complete
+            sequence, because usually locations are relative and not
+            absolute.
         Returns:
             A new JoinedLocation
         """
@@ -422,8 +416,9 @@ def parse_location(location_string):
         78..>101
         XM_12345:<location>
         65^1
-    The only that is not supported yet, is the order function. Generally, this
-    function is not available in location strings and thus not mandatory.
+    The only one that is not supported yet, is the order function.
+    Generally, this function is not available in location strings and
+    makes it not mandatory.
 
     Parameters:
         location_string - string
@@ -442,17 +437,17 @@ def parse_location(location_string):
 
 
 def __execute_function(argument, top_level=True):
-    """ Executes an argument string which represents a function.
+    """ Executes a function string which represents a function.
 
     Parameters:
         argument - string
-            The function to parse and execute
+            The function to parse and execute.
         top_level - boolean
             A boolean to determine whether functions are allowed at
-            this level. Operators cannot nest deep in locations.
+            this level. Operators cannot nest in locations.
     Returns:
         The return value of the executed function (which is most
-        likely a JoinedLocation or ComplementLocation)
+        likely a JoinedLocation or ComplementLocation).
     """
     for func_map in function_mapping:
         # check whether it is this function
@@ -481,7 +476,7 @@ def __execute_function(argument, top_level=True):
 
 
 def __parse_string_arguments(location_string):
-    """ Parses the argument for a function. Note that the first
+    """ Parses the arguments for a function. Note that the first
     parenthesis should be removed to avoid going up a parsing
     level. This parsing level defines when to stop parsing.
 
@@ -513,7 +508,7 @@ def __parse_string_arguments(location_string):
 
 
 def __parse_location_string(location_string):
-    """ Selects the correct parses class """
+    """ Selects the correct parser class """
     for (char, cls) in location_mapping:
         if char in location_string:
             return cls(location_string)

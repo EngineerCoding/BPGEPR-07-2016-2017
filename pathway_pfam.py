@@ -8,13 +8,13 @@ from collections import OrderedDict
 
 
 def get_pathways_pfams(asncode):
-    """ Retrieves all the asn codes for the pathway which the gene asn code
-    contains. At the same time, it will retrieve the pfam families of this
-    gene.
+    """ Retrieves all the asn codes for the pathways which the given
+    gene is in. At the same time, it will retrieve the pfam families of
+    this gene.
 
     Parameters:
-        asncode - string. This is the asn code which is retrieved by the
-        get_asn_for_gene function.
+        asncode - string. This is the asn code which is retrieved by
+        the get_asn_for_gene function.
     Returns:
         A list of pathway asn codes, and a list of pfam families.
     """
@@ -43,8 +43,8 @@ def get_authors_list(connection):
     associated with the publication.
 
     Parameters:
-        connection - A file-like object. Usually this will be a connection
-        to the KEGG API.
+        connection - A file-like object. Usually this will be a
+        connection to the KEGG API.
     Returns:
         A list with author names
     """
@@ -58,15 +58,16 @@ def get_authors_list(connection):
 
 
 def get_pathway_data(asn_pathway_code):
-    """ Retrieves all the data of the pathway such as name, class and all the
-     publications that are available on this pathway. This includes the
-     publication information such as title, journal, reference and authors.
+    """ Retrieves all the data of the pathway such as name, class and
+    all the publications that are available on this pathway. This
+    includes the publication information such as title, journal,
+    reference and authors.
 
-     Parameters:
-         asn_pathway_code - string. The asn code that is retrieved by te
-         get_pathways function.
-     Returns:
-         A dictionary with the collected information.
+    Parameters:
+        asn_pathway_code - string. The asn code that is retrieved by
+        the get_pathways function.
+    Returns:
+        A dictionary with the collected information.
     """
     connection = urllib.urlopen(
         'http://rest.kegg.jp/get/path:' + asn_pathway_code)
@@ -77,9 +78,9 @@ def get_pathway_data(asn_pathway_code):
     # Read all the publications if available
     reference_line = get_line(connection, 'REFERENCE')
     while reference_line:
-        # Retrieves the complete authors list
+        # Retrieve the complete authors list
         publication = dict(authors=get_authors_list(connection))
-        # Retrieves other information about the publications
+        # Retrieve other information about the publication
         publication['title'] = get_line(connection, 'TITLE')
         publication['journal'] = get_line(connection, 'JOURNAL')
         publication['id'] = reference_line.split(':')[1]
@@ -90,11 +91,11 @@ def get_pathway_data(asn_pathway_code):
 
 
 def get_pfam_data(pfam):
-    """ Retrieves the average domain length, identity percentage and average
-    coverage of the domain from the PFAM api.
+    """ Retrieves the average domain length, identity percentage and
+    average coverage of the domain from the PFAM API.
 
     Parameters:
-        pfam - string.
+        pfam - string. The name of the family.
     Returns:
         A dictionary with the following keys:
             - av_length (average domain length)
@@ -119,25 +120,26 @@ def get_pfam_data(pfam):
 
 
 def get_pathway_pfam_data(proteincode_kegg):
-    """ Downloads all the data and stores this for the pathway and domain
-    data. This is done in an efficient way: a file is only downloaded once
-    and reused which reduses the execution time of the complete script since
-    there is less to be downloaded.
+    """ Downloads all the data and stores this for the pathway and
+    domain data. This is done in an efficient way: a file is only
+    downloaded once which reduses the execution time of the complete
+    script since there is less to be downloaded.
 
     Parameters:
-        proteincode_kegg - dictionary. The dictionary containing proteincodes
-        as keys and kegg asn numbers as values.
+        proteincode_kegg - dictionary. The dictionary containing
+        proteincodes as keys and kegg asn numbers as values.
     Return:
-        pathway - dictionary. The key represents the asn code for the pathway
-        and the value is another dictionary with the name, class and
-        publications.
-        pathway_links - dictionary. The key represents a proteincode and the
-        values are the asn codes for the pathways.
-        domains - dictionary. The key represents the name of a domain and the
-        values are dictionaries with the information associated with that
-        domain.
-        domain_links - dictionary. The key represents the proteincode and the
-        value is the correct index to the correct domain in the database.
+        pathway - dictionary. The keys represent the asn code for the
+        pathway and the value is another dictionary with the name,
+        class and publications.
+        pathway_links - dictionary. The keys represent a proteincode
+        and the values are the asn codes for the pathways.
+        domains - dictionary. The keys represent the name of a domain
+        and the values are dictionaries with the information associated
+        with that domain.
+        domain_links - dictionary. The keys represent the proteincode
+        and the value is the correct index to the correct domain in the
+        database.
     """
     stored_pathways, stored_domains = [], []
     pathway, domains = {}, OrderedDict()

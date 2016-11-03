@@ -7,16 +7,16 @@ from utils import get_line
 
 
 def reaction_number(proteincode_kegg):
-    """ Every kegg proteincode will be used to find all reaction numbers by
-    parsing a HTML file. This HTML file contains the R codes specific for the
-    protein.
+    """ Every kegg proteincode will be used to find all reaction
+    numbers by parsing a HTML file. This HTML file contains the R codes
+    specific for the protein.
 
     Parameters:
-        proteincode_kegg - dictionary. A dictionary with proteincodes as
-        keys and kegg proteincodes as values.
+        proteincode_kegg - dictionary. A dictionary with proteincodes
+        as keys and kegg proteincodes as values.
     Returns:
-        A dictionary containing proteincodes as keys and as value there will
-        be a list with Rcodes.
+        A dictionary containing proteincodes as keys and as values
+        there will be a list with Rcodes.
     """
     dict_reactions = {}
     for proteincode in proteincode_kegg:
@@ -32,11 +32,12 @@ def reaction_number(proteincode_kegg):
 
 
 def search_reaction_nr(html_text):
-    """ This function actually searches for the reaction number and collects
-    them.
+    """ This function actually searches for the reaction number and
+    collects them.
 
     Parameters:
-        html_text - string. The text of the HTML file which contains Rcodes.
+        html_text - string. The text of the HTML file which contains
+        Rcodes.
     Returns:
         A list of reaction numbers which can be used in the KEGG API.
     """
@@ -58,8 +59,9 @@ def search_reaction_nr(html_text):
 
 
 def tag_reaction_nr(char, tag, all_reactions, reaction_nr):
-    """ Whenever a specific part in the html code is tagged (tag = True), add
-    all of the following characters (char) to the string reaction_nr.
+    """ Whenever a specific part in the html code is tagged
+    (tag = True), add all of the following characters (char) to the
+    string reaction_nr.
 
     Parameters:
         tag - boolean. Indicates when text is tagged.
@@ -82,20 +84,21 @@ def tag_reaction_nr(char, tag, all_reactions, reaction_nr):
 
 
 def get_reaction_data(proteincode_kegg):
-    """ This is the main function which handles all functions in this file. It
-    takes a list a dictionary with proteincodes and KEGG proteincodes and
-    converts this in a dictionary with proteincodes linked to the reaction and
-    a dictionary with the actual reaction data.
+    """ This is the main function which handles all functions in this
+    file. It takes a dictionary with proteincodes and KEGG proteincodes
+    and converts this in a dictionary with proteincodes linked to the
+    reaction and a dictionary with the actual reaction data.
 
     Parameters:
-        proteincode_kegg - dictionary. A dictionary with proteincodes as keys
-        and KEGG proteincodes as values.
+        proteincode_kegg - dictionary. A dictionary with proteincodes
+        as keys and KEGG proteincodes as values.
     Returns:
-        1. A dictionary with proteincodes as keys and reaction codes as values.
-        This represents the linkage between proteins and reactions.
-        2. A dictionary with rcodes as keys and a dictionary with 'reaction',
-        'ec' and 'id' as keys and thus contains the information for the
+        1. A dictionary with proteincodes as keys and reaction codes as
+        values. This represents the linkage between proteins and
         reactions.
+        2. A dictionary with rcodes as keys and a dictionary with
+        'reaction', 'ec' and 'id' as keys and thus contains the
+        information for the reactions.
     """
     proteincodes_rcodes = reaction_number(proteincode_kegg)
     proteincode_reaction = {}

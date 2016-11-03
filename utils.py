@@ -15,8 +15,8 @@ def get_line(lines, starting):
         can be iterated through for lines.
         starting - string. The string which the line should start with.
     Returns:
-        The line which starts with the line. If not available it will return
-        an empty string.
+        The line which starts with the starting string. If not
+        available it will return an empty string.
     """
     line = lines.readline()
     while line:
@@ -31,11 +31,12 @@ def get_line(lines, starting):
 
 
 def convert_gi_to_asn(protein_code):
-    """ Does the API call to retrieve the ASN code for the protein code.
+    """ Does the API call to retrieve the ASN code for the protein
+    code.
 
     Arguments:
-        protein_code - string or int. The protein code which the API needs
-        to convert to an ASN code.
+        protein_code - string or int. The protein code which the API
+        needs to convert to an ASN code.
     Returns:
         When available, the asn code.
     """

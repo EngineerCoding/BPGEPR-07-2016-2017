@@ -4,7 +4,7 @@
 mkdir outputs
 cd outputs
 
-# Assignment 3 of B
+# Assignment 3B
 
 # Retrieve the genome transcript in FASTA format of Alligator Sinensis
 wget -q "ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCF_000455745.1_ASM45574v1/GCF_000455745.1_ASM45574v1_rna.fna.gz" -O alligator_sinensis_cds.fa.gz
@@ -47,7 +47,7 @@ END {
 	}
 }' > genecodes
 
-# Assignment 4 of B
+# Assignment 4B
 # Create a directory where our protein genbank files are going to be stored
 cd ..
 mkdir protein_genbank_files
