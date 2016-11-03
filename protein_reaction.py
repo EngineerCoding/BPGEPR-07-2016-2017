@@ -21,8 +21,8 @@ def reaction_number(proteincode_kegg):
     dict_reactions = {}
     for proteincode in proteincode_kegg:
         html_file = urllib.urlopen("http://www.genome.jp/dbget-bin/get_linkdb?"
-                                  "-t+reaction+"
-                                  + proteincode_kegg[proteincode])
+                                   "-t+reaction+" +
+                                   proteincode_kegg[proteincode])
         html_text = html_file.read().decode()
         html_file.close()
         list_reactions = search_reaction_nr(html_text)

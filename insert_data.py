@@ -73,7 +73,7 @@ def get_gi_kegg_dictionary(proteincodes):
 
 def insert_data(cursor, table, lst_data):
     """ Inserts data based on the table name and a list of
-    dictionaries which represent a row which should be 
+    dictionaries which represent a row which should be
     inserted.
 
     Parameters:
